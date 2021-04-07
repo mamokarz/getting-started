@@ -20,6 +20,8 @@
 #include "azure_device_x509_cert_config.h"
 #include "azure_pnp_info.h"
 #include "az_ulib_dm.h"
+#include "az_ulib_ipc_api.h"
+#include "azure/az_core.h"
 
 #define IOT_MODEL_ID "dtmi:azurertos:devkit:gsg;2"
 
@@ -178,6 +180,74 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
                 case AZ_ERROR_ULIB_BUSY:
                     http_status = 500;
                     http_response = "{ \"description\":\"Interface call in progress.\" }";
+                break;
+                default:
+                    http_status = 400;
+                    http_response = "{ \"description\":\"Unknow error.\" }";
+                break;
+            }
+        }
+    }
+    else
+    {
+        az_result result;
+        char buf[100];
+        char result_buf[200];
+        az_span result_span = AZ_SPAN_FROM_BUFFER(result_buf);
+        az_ulib_ipc_interface_handle handle = NULL;
+
+        strncpy((char*)buf, (const char*)method, (size_t)method_length);
+        buf[method_length] = '\0';
+        
+        az_span method_span = az_span_create_from_str(buf);
+        int32_t split_pos = az_span_find(method_span, AZ_SPAN_FROM_STR("."));
+        az_span interface_span = az_span_slice(method_span, 0, split_pos);
+        method_span = az_span_slice_to_end(method_span, split_pos+1);
+        split_pos = az_span_find(method_span, AZ_SPAN_FROM_STR("."));
+        az_span version_span = az_span_slice(method_span, 0, split_pos);
+        uint32_t version;
+        method_span = az_span_slice_to_end(method_span, split_pos+1);
+
+        if(az_span_atou32(version_span, &version) != AZ_OK)
+        {
+            http_status = 400;
+            http_response = "{ \"description\":\"Invalid method version.\" }";
+        }
+        else if((result = az_ulib_ipc_try_get_interface(interface_span, version, AZ_ULIB_VERSION_EQUALS_TO, &handle)) == AZ_OK)
+        {
+            az_span payload_span = az_span_create(payload, (int32_t)payload_length);
+            if((result = az_ulib_ipc_call_w_str(handle, method_span, payload_span, &result_span)) == AZ_OK)
+            {
+                http_status = 200;
+                http_response = (char*)az_span_ptr(result_span);
+                http_response[az_span_size(result_span)] = '\0';
+            }
+            else
+            {
+                switch(result)
+                {
+                    case AZ_ERROR_ITEM_NOT_FOUND:
+                        http_status = 404;
+                        http_response = "{ \"description\":\"Command not found.\" }";
+                    break;
+                    case AZ_ERROR_NOT_SUPPORTED:
+                        http_status = 405;
+                        http_response = "{ \"description\":\"Interface does not support JSON call.\" }";
+                    break;
+                    default:
+                        http_status = 400;
+                        http_response = "{ \"description\":\"Unknow error.\" }";
+                    break;
+                }
+            }
+        }
+        else
+        {
+            switch(result)
+            {
+                case AZ_ERROR_ITEM_NOT_FOUND:
+                    http_status = 404;
+                    http_response = "{ \"description\":\"Interface not found.\" }";
                 break;
                 default:
                     http_status = 400;
