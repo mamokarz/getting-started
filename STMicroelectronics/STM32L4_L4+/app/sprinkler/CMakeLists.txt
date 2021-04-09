@@ -4,21 +4,20 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-add_library(az_ulib_dm
-  ${CMAKE_CURRENT_LIST_DIR}/src/az_ulib_dm_interface.c
-  ${CMAKE_CURRENT_LIST_DIR}/src/az_ulib_dm.c
+add_library(sprinkler
+  ${CMAKE_CURRENT_LIST_DIR}/src/sprinkler_v1i1.c
+  ${CMAKE_CURRENT_LIST_DIR}/src/sprinkler_v1i1_interface.c
 )
 
-target_include_directories(az_ulib_dm
+target_include_directories(sprinkler
   PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/inc
 )
 
-target_link_libraries(az_ulib_dm
+target_link_libraries(sprinkler
+  stm32cubel4
+
   az::core
   az::ulib
-  cipher
-  sprinkler
 )
 
-add_library(az::dm ALIAS az_ulib_dm)
