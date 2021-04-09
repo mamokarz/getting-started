@@ -42,7 +42,7 @@ static int32_t telemetry_interval = 10;
 az_result dcf_ip_gateway_client_entry(
     NX_IP* ip_ptr, NX_PACKET_POOL* pool_ptr, NX_DNS* dns_ptr, UINT (*unix_time_callback)(ULONG* unix_time))
 {
-    az_result result = AZ_OK; // this is a dcf function, so we will return az_result
+    az_result result; // this is a dcf function, so we will return az_result
     UINT status; // for wifi functions
 
     // initialize TCP connection objects
@@ -53,7 +53,7 @@ az_result dcf_ip_gateway_client_entry(
     UINT server_port = 9999;
 
     // Connect to server
-    printf("Connecting to TCP client\r\n\r\n");
+    printf("Connecting to TCP server\r\n\r\n");
     if ((status = nx_wifi_tcp_client_socket_connect(&socket_ptr,
                                         &server_ip,
                                         server_port,
@@ -63,13 +63,17 @@ az_result dcf_ip_gateway_client_entry(
         result = AZ_ERROR_CANCELED;
     }
 
-    // disconnect from server
-    if ((status = nx_wifi_tcp_socket_disconnect(&socket_ptr, 0)))
+    // Disconnect from server
+    else if ((status = nx_wifi_tcp_socket_disconnect(&socket_ptr, 0)))
     {
         printf("Error disconnecting from TCP server (0x%04x)\r\n", status);
         result = AZ_ERROR_CANCELED;
     }
 
+    else
+    {
+        result = AZ_OK;
+    }
     return result;
 }
 
