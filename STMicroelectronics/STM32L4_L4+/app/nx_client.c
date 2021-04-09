@@ -19,7 +19,7 @@
 #include "azure_config.h"
 #include "azure_device_x509_cert_config.h"
 #include "azure_pnp_info.h"
-#include "az_ulib_dm.h"
+#include "az_ulib_dm_api.h"
 #include "az_ulib_ipc_api.h"
 #include "azure/az_core.h"
 
@@ -28,16 +28,15 @@
 #define TELEMETRY_TEMPERATURE       "temperature"
 #define TELEMETRY_INTERVAL_PROPERTY "telemetryInterval"
 #define LED_STATE_PROPERTY          "ledState"
-#define SET_LED_STATE_COMMAND       "setLedState"
-#define INSTALL_COMMAND             "install"
-#define UNINSTALL_COMMAND           "uninstall"
 
 #define TELEMETRY_INTERVAL_EVENT 1
+
+#define TEMP_BUFFER_SIZE 200
 
 static AZURE_IOT_NX_CONTEXT azure_iot_nx_client;
 static TX_EVENT_FLAGS_GROUP azure_iot_flags;
 
-static int32_t telemetry_interval = 10;
+static LONG telemetry_interval = 10;
 
 static UINT append_device_info_properties(NX_AZURE_IOT_JSON_WRITER* json_writer, VOID* context)
 {
@@ -101,18 +100,29 @@ static UINT append_device_telemetry(NX_AZURE_IOT_JSON_WRITER* json_writer, VOID*
     return NX_AZURE_IOT_SUCCESS;
 }
 
-static void set_led_state(bool level)
+static az_result split_method(az_span method, az_span* interface_name, ULONG* version, az_span* capability_name)
 {
-    if (level)
+    AZ_ULIB_TRY
     {
-        printf("LED is turned ON\r\n");
-        BSP_LED_On(LED_GREEN);
+        LONG split_pos =  az_span_find(method, AZ_SPAN_FROM_STR("."));
+        AZ_ULIB_THROW_IF_ERROR((split_pos != -1), AZ_ERROR_UNEXPECTED_CHAR)
+        *interface_name = az_span_slice(method, 0, split_pos);
+        AZ_ULIB_THROW_IF_ERROR((az_span_size(*interface_name) > 0), AZ_ERROR_UNEXPECTED_CHAR)
+        method = az_span_slice_to_end(method, split_pos+1);
+
+        split_pos = az_span_find(method, AZ_SPAN_FROM_STR("."));
+        AZ_ULIB_THROW_IF_ERROR((split_pos != -1), AZ_ERROR_UNEXPECTED_CHAR)
+        az_span version_span = az_span_slice(method, 0, split_pos);
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atou32(version_span, version))
+
+        *capability_name = az_span_slice_to_end(method, split_pos+1);
+        AZ_ULIB_THROW_IF_ERROR((az_span_size(*capability_name) > 0), AZ_ERROR_UNEXPECTED_CHAR)
     }
-    else
+    AZ_ULIB_CATCH(...)
     {
-        printf("LED is turned OFF\r\n");
-        BSP_LED_Off(LED_GREEN);
+        return AZ_ULIB_TRY_RESULT;
     }
+    return AZ_OK;
 }
 
 static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
@@ -124,145 +134,77 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
     USHORT context_length)
 {
     UINT status;
-    UINT http_status    = 501;
-    CHAR* http_response = "{}";
+    UINT http_status;
+    char buf[TEMP_BUFFER_SIZE];
+    char result_buf[TEMP_BUFFER_SIZE];
+    az_span http_response = AZ_SPAN_FROM_BUFFER(result_buf);
 
-    if (strncmp((CHAR*)method, SET_LED_STATE_COMMAND, method_length) == 0)
-    {
-        bool arg = (strncmp((CHAR*)payload, "true", payload_length) == 0);
-        set_led_state(arg);
-
-        azure_iot_nx_client_publish_bool_property(&azure_iot_nx_client, LED_STATE_PROPERTY, arg);
-
-        http_status = 200;
-    }
-    else if (strncmp((CHAR*)method, INSTALL_COMMAND, method_length) == 0)
+    AZ_ULIB_TRY
     {
         az_result result;
-        if((result = az_ulib_dm_install((CHAR*)payload, payload_length)) == AZ_OK)
-        {
-            http_status = 200;
-        }
-        else
-        {
-            switch(result)
-            {
-                case AZ_ERROR_ULIB_ELEMENT_DUPLICATE:
-                    http_status = 409;
-                    http_response = "{ \"description\":\"Package expose an already published interface.\" }";
-                break;
-                case AZ_ERROR_NOT_ENOUGH_SPACE:
-                    http_status = 507;
-                    http_response = "{ \"description\":\"There is no more space to store the new package.\" }";
-                break;
-                default:
-                    http_status = 400;
-                    http_response = "{ \"description\":\"Unknow error.\" }";
-                break;
-            }
-        }
-    }
-    else if (strncmp((CHAR*)method, UNINSTALL_COMMAND, method_length) == 0)
-    {
-        az_result result;
-        if((result = az_ulib_dm_uninstall((CHAR*)payload, payload_length)) == AZ_OK)
-        {
-            http_status = 200;
-        }
-        else
-        {
-            switch(result)
-            {
-                case AZ_ERROR_ITEM_NOT_FOUND:
-                    http_status = 404;
-                    http_response = "{ \"description\":\"Package not found.\" }";
-                break;
-                case AZ_ERROR_ULIB_BUSY:
-                    http_status = 500;
-                    http_response = "{ \"description\":\"Interface call in progress.\" }";
-                break;
-                default:
-                    http_status = 400;
-                    http_response = "{ \"description\":\"Unknow error.\" }";
-                break;
-            }
-        }
-    }
-    else
-    {
-        az_result result;
-        char buf[100];
-        char result_buf[200];
-        az_span result_span = AZ_SPAN_FROM_BUFFER(result_buf);
         az_ulib_ipc_interface_handle handle = NULL;
 
         strncpy((char*)buf, (const char*)method, (size_t)method_length);
         buf[method_length] = '\0';
-        
-        az_span method_span = az_span_create_from_str(buf);
-        int32_t split_pos = az_span_find(method_span, AZ_SPAN_FROM_STR("."));
-        az_span interface_span = az_span_slice(method_span, 0, split_pos);
-        method_span = az_span_slice_to_end(method_span, split_pos+1);
-        split_pos = az_span_find(method_span, AZ_SPAN_FROM_STR("."));
-        az_span version_span = az_span_slice(method_span, 0, split_pos);
-        uint32_t version;
-        method_span = az_span_slice_to_end(method_span, split_pos+1);
+        az_span method_full_name = az_span_create_from_str(buf);
 
-        if(az_span_atou32(version_span, &version) != AZ_OK)
+        az_span interface_span;
+        ULONG version;
+        az_span method_span;
+        AZ_ULIB_THROW_IF_AZ_ERROR(split_method(method_full_name, &interface_span, &version, &method_span));
+
+        AZ_ULIB_THROW_IF_AZ_ERROR((result = az_ulib_ipc_try_get_interface(interface_span, version, AZ_ULIB_VERSION_EQUALS_TO, &handle)));
+
+        az_span payload_span = az_span_create(payload, (LONG)payload_length);
+
+        AZ_ULIB_THROW_IF_AZ_ERROR((result = az_ulib_ipc_call_w_str(handle, method_span, payload_span, &http_response)));
+
+        http_status = 200;
+    }
+    AZ_ULIB_CATCH(...)
+    {
+        const char* error_str;
+        switch(AZ_ULIB_TRY_RESULT)
         {
-            http_status = 400;
-            http_response = "{ \"description\":\"Invalid method version.\" }";
+            case AZ_ERROR_ULIB_ELEMENT_DUPLICATE:
+                http_status = 409;
+                error_str = "AZ_ERROR_ULIB_ELEMENT_DUPLICATE";
+            break;
+            case AZ_ERROR_NOT_ENOUGH_SPACE:
+                http_status = 507;
+                error_str = "AZ_ERROR_NOT_ENOUGH_SPACE";
+            break;
+            case AZ_ERROR_UNEXPECTED_CHAR:
+                http_status = 400;
+                error_str = "AZ_ERROR_UNEXPECTED_CHAR";
+            break;
+            case AZ_ERROR_ITEM_NOT_FOUND:
+                http_status = 404;
+                error_str = "AZ_ERROR_ITEM_NOT_FOUND";
+            break;
+            case AZ_ERROR_NOT_SUPPORTED:
+                http_status = 405;
+                error_str = "AZ_ERROR_NOT_SUPPORTED";
+            break;
+            case AZ_ERROR_ULIB_BUSY:
+                http_status = 500;
+                error_str = "AZ_ERROR_ULIB_BUSY";
+            break;                
+            default:
+                http_status = 400;
+                error_str = "Unknow error.";
+            break;
         }
-        else if((result = az_ulib_ipc_try_get_interface(interface_span, version, AZ_ULIB_VERSION_EQUALS_TO, &handle)) == AZ_OK)
-        {
-            az_span payload_span = az_span_create(payload, (int32_t)payload_length);
-            if((result = az_ulib_ipc_call_w_str(handle, method_span, payload_span, &result_span)) == AZ_OK)
-            {
-                http_status = 200;
-                http_response = (char*)az_span_ptr(result_span);
-                http_response[az_span_size(result_span)] = '\0';
-            }
-            else
-            {
-                switch(result)
-                {
-                    case AZ_ERROR_ITEM_NOT_FOUND:
-                        http_status = 404;
-                        http_response = "{ \"description\":\"Command not found.\" }";
-                    break;
-                    case AZ_ERROR_NOT_SUPPORTED:
-                        http_status = 405;
-                        http_response = "{ \"description\":\"Interface does not support JSON call.\" }";
-                    break;
-                    default:
-                        http_status = 400;
-                        http_response = "{ \"description\":\"Unknow error.\" }";
-                    break;
-                }
-            }
-        }
-        else
-        {
-            switch(result)
-            {
-                case AZ_ERROR_ITEM_NOT_FOUND:
-                    http_status = 404;
-                    http_response = "{ \"description\":\"Interface not found.\" }";
-                break;
-                default:
-                    http_status = 400;
-                    http_response = "{ \"description\":\"Unknow error.\" }";
-                break;
-            }
-        }
+        (void)snprintf(result_buf, TEMP_BUFFER_SIZE, "{ \"description\":\"%s\" }", error_str);
+        http_response = az_span_create_from_str(result_buf);
     }
 
     if ((status = nx_azure_iot_hub_client_direct_method_message_response(&nx_context->iothub_client,
              http_status,
              context,
              context_length,
-             (UCHAR*)http_response,
-             strlen(http_response),
+             (UCHAR*)az_span_ptr(http_response),
+             (size_t)az_span_size(http_response),
              NX_WAIT_FOREVER)))
     {
         printf("Direct method response failed! (0x%08x)\r\n", status);
