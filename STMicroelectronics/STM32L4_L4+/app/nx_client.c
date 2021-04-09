@@ -39,7 +39,7 @@ static TX_EVENT_FLAGS_GROUP azure_iot_flags;
 
 static int32_t telemetry_interval = 10;
 
-az_result dcf_ip_gateway_client_entry(
+az_result dcf_tcp_client_gateway_entry(
     NX_IP* ip_ptr, NX_PACKET_POOL* pool_ptr, NX_DNS* dns_ptr, UINT (*unix_time_callback)(ULONG* unix_time))
 {
     az_result result; // this is a dcf function, so we will return az_result
@@ -64,7 +64,7 @@ az_result dcf_ip_gateway_client_entry(
     }
 
     // Disconnect from server
-    else if ((status = nx_wifi_tcp_socket_disconnect(&socket_ptr, 0)))
+    if ((status = nx_wifi_tcp_socket_disconnect(&socket_ptr, 0)))
     {
         printf("Error disconnecting from TCP server (0x%04x)\r\n", status);
         result = AZ_ERROR_CANCELED;
