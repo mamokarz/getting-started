@@ -25,6 +25,9 @@
 
 #include "nx_wifi.h" // DCF
 #define DEMO_DATA "----- Test Packet -----\n"
+#define DCF_PACKET_COUNT 5
+#define DCF_PACKET_SIZE  1200 // Set the default value to 1200 since WIFI payload size (ES_WIFI_PAYLOAD_SIZE) is 1200
+#define DCF_POOL_SIZE    ((DCF_PACKET_SIZE + sizeof(NX_PACKET)) * DCF_PACKET_COUNT)
 
 #define IOT_MODEL_ID "dtmi:azurertos:devkit:gsg;1"
 
@@ -34,6 +37,7 @@
 #define SET_LED_STATE_COMMAND       "setLedState"
 #define INSTALL_COMMAND             "install"
 #define UNINSTALL_COMMAND           "uninstall"
+#define TCP_SEND_COMMAND            "tcp_send"
 
 #define TELEMETRY_INTERVAL_EVENT 1
 
@@ -42,8 +46,9 @@ static TX_EVENT_FLAGS_GROUP azure_iot_flags;
 
 static int32_t telemetry_interval = 10;
 
-az_result dcf_tcp_client_gateway_entry(
-    NX_IP* ip_ptr, NX_PACKET_POOL* pool_ptr, NX_DNS* dns_ptr, UINT (*unix_time_callback)(ULONG* unix_time))
+static UCHAR dcf_ip_pool[DCF_POOL_SIZE]; // DCF
+
+az_result dcf_tcp_client_gateway_entry(NX_PACKET_POOL* pool_ptr)
 {
     az_result result; // this is a dcf function, so we will return az_result
     UINT status; // for wifi functions
@@ -60,8 +65,8 @@ az_result dcf_tcp_client_gateway_entry(
     ULONG packet_length;
 
     // loop forever
-    while(1)
-    {
+    // while(1)
+    // {
         // Connect to server
         printf("Connecting to TCP server\r\n\r\n");
         if ((status = nx_wifi_tcp_client_socket_connect(&socket_ptr,
@@ -110,13 +115,10 @@ az_result dcf_tcp_client_gateway_entry(
         {
             result = AZ_OK;
         }
-        
-        // sleep
-        _tx_thread_sleep(50);
-    }
-    
-    
 
+        // sleep
+    //     _tx_thread_sleep(50);
+    // }
     
     return result;
 }
@@ -268,6 +270,32 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
                     http_response = "{ \"description\":\"Unknow error.\" }";
                 break;
             }
+        }
+    }
+    else if (strncmp((CHAR*)method, TCP_SEND_COMMAND, method_length) == 0)
+    {
+        az_result result;
+        NX_PACKET_POOL tcp_pool;
+        printf("Send TCP Packet!\r\n");
+        // create temporary packet pool
+        status = nx_packet_pool_create(&tcp_pool, "DCF Packet Pool", DCF_PACKET_SIZE, dcf_ip_pool, DCF_POOL_SIZE);
+        if (status != NX_SUCCESS)
+        {
+            nx_packet_pool_delete(&tcp_pool);
+            printf("ERROR: Packet pool create fail.\r\n");
+            return;
+        }
+        if((result = dcf_tcp_client_gateway_entry(&tcp_pool)) == AZ_OK)
+        {
+            nx_packet_pool_delete(&tcp_pool);
+            printf("TCP Send Success!\r\n");
+            return;
+        }
+        else
+        {   
+            nx_packet_pool_delete(&tcp_pool);
+            printf("TCP Send Failure!\r\n");
+            return;
         }
     }
     else

@@ -85,19 +85,19 @@ void azure_thread_entry(ULONG parameter)
 }
 
 // thread entry point for dcf ip gateway
-void dcf_tcp_client_gateway_thread_entry(ULONG parameter)
-{
-    az_result result;
+// void dcf_tcp_client_gateway_thread_entry(ULONG parameter)
+// {
+//     az_result result;
 
-    printf("\r\nStarting DCF TCP client gateway thread\r\n\r\n");
+//     printf("\r\nStarting DCF TCP client gateway thread\r\n\r\n");
 
-    // dcf ip gateway entry
-    if ((result = dcf_tcp_client_gateway_entry(&nx_ip, &nx_pool, &nx_dns_client, sntp_time)) != AZ_OK)
-    {
-         (void)printf("Initialize DCF IP Gateway failed with code %" PRIi32 ".\r\n", result);
-        return;
-    }
-}
+//     // dcf ip gateway entry
+//     if ((result = dcf_tcp_client_gateway_entry(&nx_ip, &nx_pool, &nx_dns_client, sntp_time)) != AZ_OK)
+//     {
+//          (void)printf("Initialize DCF IP Gateway failed with code %" PRIi32 ".\r\n", result);
+//         return;
+//     }
+// }
 
 void tx_application_define(void* first_unused_memory)
 {
@@ -120,22 +120,22 @@ void tx_application_define(void* first_unused_memory)
         printf("Azure IoT thread creation failed\r\n");
     }
 
-    // Create DCF TCP client gateway thread
-    status = tx_thread_create(&dcf_gw_thread,
-        "DCF TCP client gateway thread",
-        dcf_tcp_client_gateway_thread_entry,
-        0,
-        dcf_gw_thread_stack,
-        DCF_GW_THREAD_STACK_SIZE,
-        DCF_GW_THREAD_PRIORITY,
-        DCF_GW_THREAD_PRIORITY,
-        TX_NO_TIME_SLICE,
-        TX_AUTO_START);
+    // // Create DCF TCP client gateway thread
+    // status = tx_thread_create(&dcf_gw_thread,
+    //     "DCF TCP client gateway thread",
+    //     dcf_tcp_client_gateway_thread_entry,
+    //     0,
+    //     dcf_gw_thread_stack,
+    //     DCF_GW_THREAD_STACK_SIZE,
+    //     DCF_GW_THREAD_PRIORITY,
+    //     DCF_GW_THREAD_PRIORITY,
+    //     TX_NO_TIME_SLICE,
+    //     TX_AUTO_START);
 
-    if (status != TX_SUCCESS)
-    {
-        printf("DCF TCP client gateway thread creation failed\r\n");
-    }
+    // if (status != TX_SUCCESS)
+    // {
+    //     printf("DCF TCP client gateway thread creation failed\r\n");
+    // }
 }
 
 int main(void)
