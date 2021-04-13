@@ -23,54 +23,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-static az_result cipher_1_call_w_str(az_span name, az_span model_in, az_span* model_out);
-
-/*
- * Concrete implementations of the cipher 1 encrypt commands.
- */
 static az_result cipher_1_encrypt_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
 {
-  az_result result;
-
-  /*
-   * ==================
-   * The user code starts here.
-   */
   const cipher_1_encrypt_model_in* const in = (const cipher_1_encrypt_model_in* const)model_in;
   cipher_1_encrypt_model_out* out = (cipher_1_encrypt_model_out*)model_out;
-
-  result = cipher_v2i1_encrypt(in->context, in->src, out->dest);
-
-  /*
-   * The user code ends here.
-   * ==================
-   */
-
-  return result;
+  return cipher_v2i1_encrypt(in->context, in->src, out->dest);
 }
 
-/*
- * Concrete implementations of the cipher 1 decrypt commands.
- */
 static az_result cipher_1_decrypt_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
 {
-  az_result result;
-
-  /*
-   * ==================
-   * The user code starts here.
-   */
   const cipher_1_decrypt_model_in* const in = (const cipher_1_decrypt_model_in* const)model_in;
   cipher_1_decrypt_model_out* out = (cipher_1_decrypt_model_out*)model_out;
-
-  result = cipher_v2i1_decrypt(in->src, out->dest);
-
-  /*
-   * The user code ends here.
-   * ==================
-   */
-
-  return result;
+  return cipher_v2i1_decrypt(in->src, out->dest);
 }
 
 static az_result cipher_1_encrypt_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -114,7 +78,8 @@ static az_result cipher_1_encrypt_span_wrapper(az_span model_in_span, az_span* m
     az_json_writer jw;
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_writer_init(&jw, *model_out_span, NULL));
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_writer_append_begin_object(&jw));
-    AZ_ULIB_THROW_IF_AZ_ERROR(az_json_writer_append_property_name(&jw, AZ_SPAN_FROM_STR(CIPHER_1_ENCRYPT_DEST_NAME)));
+    AZ_ULIB_THROW_IF_AZ_ERROR(
+        az_json_writer_append_property_name(&jw, AZ_SPAN_FROM_STR(CIPHER_1_ENCRYPT_DEST_NAME)));
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_writer_append_string(&jw, *encrypt_model_out.dest));
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_writer_append_end_object(&jw));
     *model_out_span = az_json_writer_get_bytes_used_in_destination(&jw);
@@ -160,7 +125,8 @@ static az_result cipher_1_decrypt_span_wrapper(az_span model_in_span, az_span* m
     az_json_writer jw;
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_writer_init(&jw, *model_out_span, NULL));
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_writer_append_begin_object(&jw));
-    AZ_ULIB_THROW_IF_AZ_ERROR(az_json_writer_append_property_name(&jw, AZ_SPAN_FROM_STR(CIPHER_1_DECRYPT_DEST_NAME)));
+    AZ_ULIB_THROW_IF_AZ_ERROR(
+        az_json_writer_append_property_name(&jw, AZ_SPAN_FROM_STR(CIPHER_1_DECRYPT_DEST_NAME)));
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_writer_append_string(&jw, *decrypt_model_out.dest));
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_writer_append_end_object(&jw));
     *model_out_span = az_json_writer_get_bytes_used_in_destination(&jw);
@@ -173,47 +139,19 @@ static az_result cipher_1_decrypt_span_wrapper(az_span model_in_span, az_span* m
 static const az_ulib_capability_descriptor CIPHER_1_CAPABILITIES[CIPHER_1_CAPABILITY_SIZE] = {
   AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
       CIPHER_1_ENCRYPT_COMMAND_NAME,
-      cipher_1_encrypt_concrete),
-  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(CIPHER_1_DECRYPT_COMMAND_NAME, cipher_1_decrypt_concrete)
+      cipher_1_encrypt_concrete,
+      cipher_1_encrypt_span_wrapper),
+  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
+      CIPHER_1_DECRYPT_COMMAND_NAME, 
+      cipher_1_decrypt_concrete, 
+      cipher_1_decrypt_span_wrapper)
 };
 
 static const az_ulib_interface_descriptor CIPHER_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
     CIPHER_1_INTERFACE_NAME,
     CIPHER_1_INTERFACE_VERSION,
     CIPHER_1_CAPABILITY_SIZE,
-    cipher_1_call_w_str,
     CIPHER_1_CAPABILITIES);
-
-static az_result cipher_1_call_w_str(az_span name, az_span model_in_span, az_span* model_out_span)
-{
-  uint8_t index;
-  az_result result;
-
-  for (index = 0; index < CIPHER_1_DESCRIPTOR.size; index++)
-  {
-    if (az_span_is_content_equal(name, CIPHER_1_DESCRIPTOR.capability_list[index].name))
-    {
-      break;
-    }
-  }
-
-  switch (index)
-  {
-    case 0:
-      result = cipher_1_encrypt_span_wrapper(model_in_span, model_out_span);
-      break;
-    case 1:
-    {
-      result = cipher_1_decrypt_span_wrapper(model_in_span, model_out_span);
-      break;
-    }
-    default:
-      result = AZ_ERROR_ITEM_NOT_FOUND;
-      break;
-  }
-
-  return result;
-}
 
 az_result publish_cipher_v2i1_interface(void)
 {

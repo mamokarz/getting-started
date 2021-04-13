@@ -23,26 +23,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-static az_result dm_1_call_w_str(az_span name, az_span model_in, az_span* model_out);
-
-/*
- * Concrete implementations of the dm 1 install commands.
- */
 static az_result dm_1_install_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
 {
   (void)model_out;
   const dm_1_install_model_in* const in = (const dm_1_install_model_in* const)model_in;
   return az_ulib_dm_install(in->package_name);
-}
-
-/*
- * Concrete implementations of the dm 1 uninstall commands.
- */
-static az_result dm_1_uninstall_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
-{
-  (void)model_out;
-  const dm_1_uninstall_model_in* const in = (const dm_1_uninstall_model_in* const)model_in;
-  return az_ulib_dm_uninstall(in->package_name);
 }
 
 static az_result dm_1_install_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -77,6 +62,13 @@ static az_result dm_1_install_span_wrapper(az_span model_in_span, az_span* model
   AZ_ULIB_CATCH(...) { result = AZ_ULIB_TRY_RESULT; }
 
   return result;
+}
+
+static az_result dm_1_uninstall_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+{
+  (void)model_out;
+  const dm_1_uninstall_model_in* const in = (const dm_1_uninstall_model_in* const)model_in;
+  return az_ulib_dm_uninstall(in->package_name);
 }
 
 static az_result dm_1_uninstall_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -116,47 +108,19 @@ static az_result dm_1_uninstall_span_wrapper(az_span model_in_span, az_span* mod
 static const az_ulib_capability_descriptor DM_1_CAPABILITIES[DM_1_CAPABILITY_SIZE] = {
   AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
       DM_1_INSTALL_COMMAND_NAME,
-      dm_1_install_concrete),
-  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(DM_1_UNINSTALL_COMMAND_NAME, dm_1_uninstall_concrete)
+      dm_1_install_concrete,
+      dm_1_install_span_wrapper),
+  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
+      DM_1_UNINSTALL_COMMAND_NAME, 
+      dm_1_uninstall_concrete,
+      dm_1_uninstall_span_wrapper)
 };
 
 static const az_ulib_interface_descriptor DM_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
     DM_1_INTERFACE_NAME,
     DM_1_INTERFACE_VERSION,
     DM_1_CAPABILITY_SIZE,
-    dm_1_call_w_str,
     DM_1_CAPABILITIES);
-
-static az_result dm_1_call_w_str(az_span name, az_span model_in_span, az_span* model_out_span)
-{
-  uint8_t index;
-  az_result result;
-
-  for (index = 0; index < DM_1_DESCRIPTOR.size; index++)
-  {
-    if (az_span_is_content_equal(name, DM_1_DESCRIPTOR.capability_list[index].name))
-    {
-      break;
-    }
-  }
-
-  switch (index)
-  {
-    case DM_1_INSTALL_COMMAND:
-      result = dm_1_install_span_wrapper(model_in_span, model_out_span);
-      break;
-    case DM_1_UNINSTALL_COMMAND:
-    {
-      result = dm_1_uninstall_span_wrapper(model_in_span, model_out_span);
-      break;
-    }
-    default:
-      result = AZ_ERROR_ITEM_NOT_FOUND;
-      break;
-  }
-
-  return result;
-}
 
 az_result _az_ulib_dm_interface_publish(void)
 {

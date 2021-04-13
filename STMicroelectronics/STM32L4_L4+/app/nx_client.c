@@ -141,7 +141,6 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
 
     AZ_ULIB_TRY
     {
-        az_result result;
         az_ulib_ipc_interface_handle handle = NULL;
 
         strncpy((char*)buf, (const char*)method, (size_t)method_length);
@@ -153,11 +152,14 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
         az_span method_span;
         AZ_ULIB_THROW_IF_AZ_ERROR(split_method(method_full_name, &interface_span, &version, &method_span));
 
-        AZ_ULIB_THROW_IF_AZ_ERROR((result = az_ulib_ipc_try_get_interface(interface_span, version, AZ_ULIB_VERSION_EQUALS_TO, &handle)));
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ipc_try_get_interface(interface_span, version, AZ_ULIB_VERSION_EQUALS_TO, &handle));
 
         az_span payload_span = az_span_create(payload, (LONG)payload_length);
 
-        AZ_ULIB_THROW_IF_AZ_ERROR((result = az_ulib_ipc_call_w_str(handle, method_span, payload_span, &http_response)));
+        az_ulib_capability_index command_index;
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ipc_try_get_capability(handle, method_span, &command_index));
+
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ipc_call_w_str(handle, command_index, payload_span, &http_response));
 
         http_status = 200;
     }
