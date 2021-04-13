@@ -24,6 +24,7 @@
 #include "azure/az_core.h"
 
 #include "nx_wifi.h" // DCF
+#define DEMO_DATA "----- Test Packet -----\n"
 
 #define IOT_MODEL_ID "dtmi:azurertos:devkit:gsg;1"
 
@@ -54,28 +55,69 @@ az_result dcf_tcp_client_gateway_entry(
     server_ip.nxd_ip_address.v4 = IP_ADDRESS(192, 168, 1, 29);
     UINT server_port = 9999;
 
-    // Connect to server
-    printf("Connecting to TCP server\r\n\r\n");
-    if ((status = nx_wifi_tcp_client_socket_connect(&socket_ptr,
-                                        &server_ip,
-                                        server_port,
-                                        0)))
-    {
-        printf("Error connecting to TCP server (0x%04x)\r\n", status);
-        result = AZ_ERROR_CANCELED;
-    }
+    // packet variables
+    NX_PACKET* packet_ptr;
+    ULONG packet_length;
 
-    // Disconnect from server
-    if ((status = nx_wifi_tcp_socket_disconnect(&socket_ptr, 0)))
+    // loop forever
+    while(1)
     {
-        printf("Error disconnecting from TCP server (0x%04x)\r\n", status);
-        result = AZ_ERROR_CANCELED;
-    }
+        // Connect to server
+        printf("Connecting to TCP server\r\n\r\n");
+        if ((status = nx_wifi_tcp_client_socket_connect(&socket_ptr,
+                                            &server_ip,
+                                            server_port,
+                                            0)))
+        {
+            printf("Error connecting to TCP server (0x%04x)\r\n", status);
+            result = AZ_ERROR_CANCELED;
+        }
 
-    else
-    {
-        result = AZ_OK;
+        // allocate packet
+        if((status =  nx_packet_allocate(pool_ptr, &packet_ptr, NX_TCP_PACKET, NX_WAIT_FOREVER)))
+        {
+            printf("Error allocating packet (0x%04x)\r\n", status);
+            result = AZ_ERROR_CANCELED;
+        }
+
+        // write buffer to packet
+        nx_packet_data_append(packet_ptr, DEMO_DATA, sizeof(DEMO_DATA), pool_ptr, TX_WAIT_FOREVER);
+
+        status =  nx_packet_length_get(packet_ptr, &packet_length);
+        if ((status) || (packet_length != sizeof(DEMO_DATA)))
+        {
+            nx_packet_release(packet_ptr);
+            printf("Error appending data to packet (0x%04x)\r\n", status);
+            result = AZ_ERROR_CANCELED;
+        }
+        printf("Sending packet: %s\r\n", DEMO_DATA);
+        if ((status = nx_wifi_tcp_socket_send(&socket_ptr, packet_ptr, NX_WAIT_FOREVER)))
+        {
+            printf("Error sending packet to TCP server (0x%04x)\r\n", status);
+            result = AZ_ERROR_CANCELED;
+        }
+
+        // release packet
+        nx_packet_release(packet_ptr);
+
+        // Disconnect from server
+        if ((status = nx_wifi_tcp_socket_disconnect(&socket_ptr, 0)))
+        {
+            printf("Error disconnecting from TCP server (0x%04x)\r\n", status);
+            result = AZ_ERROR_CANCELED;
+        }
+        else
+        {
+            result = AZ_OK;
+        }
+        
+        // sleep
+        _tx_thread_sleep(50);
     }
+    
+    
+
+    
     return result;
 }
 
