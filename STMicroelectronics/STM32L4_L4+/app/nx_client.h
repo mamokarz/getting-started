@@ -12,6 +12,4 @@
 UINT azure_iot_nx_client_entry(
     NX_IP* ip_ptr, NX_PACKET_POOL* pool_ptr, NX_DNS* dns_ptr, UINT (*unix_time_callback)(ULONG* unix_time));
 
-az_result dcf_tcp_client_gateway_entry(NX_PACKET_POOL* pool_ptr);
-
 #endif // _NX_CLIENT_H

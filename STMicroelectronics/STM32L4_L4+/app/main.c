@@ -19,6 +19,8 @@
 #include "az_ulib_ipc_api.h"
 #include "cipher_v1i1.h"
 
+#include "dcf_tcp_gateways.h"
+
 #define AZURE_THREAD_STACK_SIZE 4096
 #define AZURE_THREAD_PRIORITY   4
 #define DCF_GW_THREAD_STACK_SIZE 4096
@@ -92,7 +94,7 @@ void azure_thread_entry(ULONG parameter)
 //     printf("\r\nStarting DCF TCP client gateway thread\r\n\r\n");
 
 //     // dcf ip gateway entry
-//     if ((result = dcf_tcp_client_gateway_entry(&nx_ip, &nx_pool, &nx_dns_client, sntp_time)) != AZ_OK)
+//     if ((result = dcf_tcp_client_send(&nx_ip, &nx_pool, &nx_dns_client, sntp_time)) != AZ_OK)
 //     {
 //          (void)printf("Initialize DCF IP Gateway failed with code %" PRIi32 ".\r\n", result);
 //         return;
