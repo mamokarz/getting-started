@@ -32,8 +32,6 @@ static az_result dm_1_install_concrete(az_ulib_model_in model_in, az_ulib_model_
 
 static az_result dm_1_install_span_wrapper(az_span model_in_span, az_span* model_out_span)
 {
-  az_result result = AZ_OK;
-
   AZ_ULIB_TRY
   {
     // Unmarshalling JSON to model_in_span.
@@ -54,14 +52,14 @@ static az_result dm_1_install_span_wrapper(az_span model_in_span, az_span* model
     AZ_ULIB_THROW_IF_AZ_ERROR(AZ_ULIB_TRY_RESULT);
 
     // Call.
-    result = dm_1_install_concrete((az_ulib_model_in)&install_model_in, NULL);
+    AZ_ULIB_THROW_IF_AZ_ERROR(dm_1_install_concrete((az_ulib_model_in)&install_model_in, NULL));
 
     // Marshalling model_out to JSON.
     *model_out_span = az_span_create_from_str("{}");
   }
-  AZ_ULIB_CATCH(...) { result = AZ_ULIB_TRY_RESULT; }
+  AZ_ULIB_CATCH(...) {}
 
-  return result;
+  return AZ_ULIB_TRY_RESULT;
 }
 
 static az_result dm_1_uninstall_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
@@ -73,8 +71,6 @@ static az_result dm_1_uninstall_concrete(az_ulib_model_in model_in, az_ulib_mode
 
 static az_result dm_1_uninstall_span_wrapper(az_span model_in_span, az_span* model_out_span)
 {
-  az_result result = AZ_OK;
-
   AZ_ULIB_TRY
   {
     // Unmarshalling JSON to model_in.
@@ -95,14 +91,14 @@ static az_result dm_1_uninstall_span_wrapper(az_span model_in_span, az_span* mod
     AZ_ULIB_THROW_IF_AZ_ERROR(AZ_ULIB_TRY_RESULT);
 
     // Call.
-    result = dm_1_uninstall_concrete((az_ulib_model_in)&uninstall_model_in, NULL);
+    AZ_ULIB_THROW_IF_AZ_ERROR(dm_1_uninstall_concrete((az_ulib_model_in)&uninstall_model_in, NULL));
 
     // Marshalling model_out to JSON.
     *model_out_span = az_span_create_from_str("{}");
   }
-  AZ_ULIB_CATCH(...) { result = AZ_ULIB_TRY_RESULT; }
+  AZ_ULIB_CATCH(...) {}
 
-  return result;
+  return AZ_ULIB_TRY_RESULT;
 }
 
 static const az_ulib_capability_descriptor DM_1_CAPABILITIES[DM_1_CAPABILITY_SIZE] = {
