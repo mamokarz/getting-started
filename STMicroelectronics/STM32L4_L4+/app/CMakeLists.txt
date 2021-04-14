@@ -17,6 +17,7 @@ set(SOURCES
 
 add_subdirectory(cipher)
 add_subdirectory(az_ulib_dm)
+add_subdirectory(dcf_tcp_gateways)
 
 function(create_target TARGET STARTUP LINKER)
     add_executable(${TARGET}
@@ -31,6 +32,7 @@ function(create_target TARGET STARTUP LINKER)
         az::ulib
         az::adu
         cipher
+        dcf_tcp_gateways
 
         stm32cubel4
         netx_driver
