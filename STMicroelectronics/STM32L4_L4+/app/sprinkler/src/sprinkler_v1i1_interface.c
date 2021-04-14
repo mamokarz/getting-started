@@ -34,7 +34,7 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
 {
   AZ_ULIB_TRY
   {
-    // Unmarshalling JSON to model_in_span.
+    // Unmarshalling JSON in model_in_span to water_now_model_in.
     az_json_reader jr;
     sprinkler_1_water_now_model_in water_now_model_in = { 0 };
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_init(&jr, model_in_span, NULL));
@@ -53,7 +53,7 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
     // Call.
     AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_1_water_now_concrete((az_ulib_model_in)&water_now_model_in, NULL));
 
-    // Marshalling model_out to JSON.
+    // Marshalling empty water_now_model_out to JSON in model_out_span.
     *model_out_span = az_span_create_from_str("{}");
   }
   AZ_ULIB_CATCH(...) {}
@@ -72,13 +72,13 @@ static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* m
 {
   AZ_ULIB_TRY
   {
-    // Unmarshalling JSON to model_in.
+    // Unmarshalling empty JSON in model_in_span to stop_model_in.
     (void)model_in_span;
 
     // Call.
     AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_1_stop_concrete(NULL, NULL));
 
-    // Marshalling model_out to JSON.
+    // Marshalling empty stop_model_out to JSON in model_out_span.
     *model_out_span = az_span_create_from_str("{}");
   }
   AZ_ULIB_CATCH(...) {}
