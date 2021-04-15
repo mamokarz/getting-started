@@ -17,7 +17,7 @@
 #include "azure_config.h"
 
 #include "az_ulib_ipc_api.h"
-#include "cipher_v1i1.h"
+#include "az_ulib_dm_api.h"
 
 #define AZURE_THREAD_STACK_SIZE 4096
 #define AZURE_THREAD_PRIORITY   4
@@ -25,6 +25,7 @@
 TX_THREAD azure_thread;
 ULONG azure_thread_stack[AZURE_THREAD_STACK_SIZE / sizeof(ULONG)];
 static az_ulib_ipc _az_ipc_handle;
+static az_ulib_dm _az_dm_handle;
 
 
 void azure_thread_entry(ULONG parameter);
@@ -44,7 +45,12 @@ void azure_thread_entry(ULONG parameter)
         return;
     }
 
-    cipher_v1i1_create();
+    //Start Device Manager
+    if((result = az_ulib_dm_init(&_az_dm_handle)) != AZ_OK)
+    {
+        (void)printf("Initialize Device Manager failed with code %" PRIi32 ".\r\n", result);
+        return;
+    }
 
     // Initialize the network
     if (stm32_network_init(WIFI_SSID, WIFI_PASSWORD, WIFI_MODE) != NX_SUCCESS)
