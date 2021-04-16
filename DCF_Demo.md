@@ -39,6 +39,25 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
 }
 ```
 
+Query for existing interfaces on the device. You should be able to see the newly installed sprinker
+```
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc_query.1.query" --mp "{}"
+
+// expected outcome
+{
+  "payload": {
+    "continuation_token": 655615,
+    "result": [
+      "ipc_query.1",
+      "dm.1",
+      "sprinkler.1"
+    ]
+  },
+  "status": 200
+}
+
+```
+
 Turn on the sprinker, which will be modeled by turning on a LED on the STM Board
 ```
 az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.1.water_now" --mp "{}" 
@@ -123,7 +142,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 }
 ```
 
-Now you can try and use a new context of the cipher interface, which would then call a different cryptography algorithm that the cipher has. However, the new context has not been installed yet.
+Now you can try and use a new context of the cipher interface, which would then call a different cryptography algorithm that the cipher has. However, the new context is not supported by version 1 of the cipher. It will require an update to version 2.
 
 ```
 az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "cipher.1.encrypt" --mp "{\"context\":1, \"src\":\"Welcome to Azure IoT\!\"}" 
@@ -131,9 +150,9 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ci
 // expected outcome
 {
   "payload": {
-    "description": "AZ_ERROR_ITEM_NOT_FOUND"
+    "description": "AZ_ERROR_NOT_SUPPORTED"
   },
-  "status": 404
+  "status": 405
 }
 ```
 
@@ -334,7 +353,7 @@ Create producer for cipher v1i1...
 Interface cipher 1 published with success
 ```
 
-We are now sendind a message to the device and using the newly installed cipher to encrypt the message "Welcome to Azure IoT!". The response will be the encrypted result of the message.
+We are now sending a message to the device and using the newly installed cipher to encrypt the message "Welcome to Azure IoT!". The response will be the encrypted result of the message.
 ```
 az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "cipher.1.encrypt" --mp "{\`"context\`":0, \`"src\`":\`"Welcome to Azure IoT\!\`"}" 
 
@@ -379,7 +398,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 }
 ```
 
-Now you can try and use a new context of the cipher interface, which would then call a different cryptography algorithm that the cipher has. However, the new context has not been installed yet.
+Now you can try and use a new context of the cipher interface, which would then call a different cryptography algorithm that the cipher has. However, the new context is not supported by version 1 of the cipher. It will require an update to version 2.
 
 ```
 az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "cipher.1.encrypt" --mp "{\`"context\`":1, \`"src\`":\`"Welcome to Azure IoT!\`"}" 
@@ -387,9 +406,9 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ci
 // expected outcome
 {
   "payload": {
-    "description": "AZ_ERROR_ITEM_NOT_FOUND"
+    "description": "AZ_ERROR_NOT_SUPPORTED"
   },
-  "status": 404
+  "status": 405
 }
 ```
 
