@@ -97,7 +97,7 @@ Create producer for cipher v1i1...
 Interface cipher 1 published with success
 ```
 
-We are now sendind a message to the device and using the newly installed cipher to encrypt the message "Welcome to Azure IoT!". The response will be the encrypted result of the message.
+We are now sending a message to the device and using the newly installed cipher to encrypt the message "Welcome to Azure IoT!". The response will be the encrypted result of the message.
 ```
 az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "cipher.1.encrypt" --mp "{\"context\":0, \"src\":\"Welcome to Azure IoT\!\"}" 
 
@@ -184,7 +184,8 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
     "continuation_token": 655615,
     "result": [
       "ipc_query.1",
-      "dm.1"
+      "dm.1",
+      "sprinkler.1"
     ]
   },
   "status": 200
@@ -220,6 +221,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
     "result": [
       "ipc_query.1",
       "dm.1",
+      "sprinkler.1",
       "cipher.1"
     ]
   },
@@ -302,7 +304,6 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 ```
 
-
 Install sprinker interface
 ```
 az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.1.install" --mp "{\`"package_name\`":\`"sprinkler_v1i1\`"}"  
@@ -324,7 +325,8 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
     "continuation_token": 655615,
     "result": [
       "ipc_query.1",
-      "dm.1"
+      "dm.1",
+      "sprinkler.1"
     ]
   },
   "status": 200
@@ -458,7 +460,8 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
     "continuation_token": 655615,
     "result": [
       "ipc_query.1",
-      "dm.1"
+      "dm.1",
+      "sprinkler.1"
     ]
   },
   "status": 200
@@ -494,6 +497,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
     "result": [
       "ipc_query.1",
       "dm.1",
+      "sprinkler.1",
       "cipher.1"
     ]
   },
