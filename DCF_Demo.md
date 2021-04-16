@@ -1,5 +1,8 @@
 # DCF Invoke Device Method Using Azure CLI
 
+## Prerequisites 
+Please make sure you have completed the Getting Started Guide for the STM32 board and flashed the binary to your device before continuing this demo. [Instructions for STM32 Getting Started Guide](https://github.com/mamokarz/getting-started/blob/master/README.md)
+
 ## Open up an instance of Azure CLI 
 You can use the Azure Portal or an instance on Powershell/bash/other local environments
 
