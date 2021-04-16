@@ -39,7 +39,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
 }
 ```
 
-Query for existing interfaces on the device. You should be able to see the newly installed sprinker
+Query for existing interfaces on the device. You should be able to see the newly installed sprinker.
 ```
 az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc_query.1.query" --mp "{}"
 
@@ -312,6 +312,24 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
   "payload": {},
   "status": 200
 }
+```
+
+Query for existing interfaces on the device. You should be able to see the newly installed sprinker.
+```
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc_query.1.query" --mp "{}"
+
+// expected outcome
+{
+  "payload": {
+    "continuation_token": 655615,
+    "result": [
+      "ipc_query.1",
+      "dm.1"
+    ]
+  },
+  "status": 200
+}
+
 ```
 
 Turn on the sprinker, which will be modeled by turning on a LED on the STM Board
