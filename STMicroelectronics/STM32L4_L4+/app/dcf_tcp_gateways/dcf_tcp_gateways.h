@@ -14,6 +14,7 @@
 #define DCF_PACKET_SIZE  1200 // Set the default value to 1200 since WIFI payload size (ES_WIFI_PAYLOAD_SIZE) is 1200
 #define DCF_POOL_SIZE    ((DCF_PACKET_SIZE + sizeof(NX_PACKET)) * DCF_PACKET_COUNT)
 
-az_result dcf_tcp_client_send(NX_PACKET_POOL* pool_ptr, ULONG server_ip_address);
+az_result dcf_tcp_client_send(NX_PACKET_POOL* pool_ptr, ULONG server_ip_address, UINT server_port);
+az_result dcf_tcp_client_receive(NX_PACKET_POOL* pool_ptr, ULONG server_ip_address, UINT server_port);
 
 #endif // _DCF_TCP_GATEWAYS_H

@@ -1,6 +1,6 @@
 #include "dcf_tcp_gateways.h"
 
-az_result dcf_tcp_client_send(NX_PACKET_POOL* pool_ptr, ULONG server_ip_address)
+az_result dcf_tcp_client_send(NX_PACKET_POOL* pool_ptr, ULONG server_ip_address, UINT server_port)
 {
     az_result result; // this is a dcf function, so we will return az_result
     UINT status; // for wifi functions
@@ -10,7 +10,6 @@ az_result dcf_tcp_client_send(NX_PACKET_POOL* pool_ptr, ULONG server_ip_address)
     NXD_ADDRESS server_ip;
     server_ip.nxd_ip_version = NX_IP_VERSION_V4;
     server_ip.nxd_ip_address.v4 = server_ip_address;
-    UINT server_port = 9999;
 
     // packet variables
     NX_PACKET* packet_ptr;
@@ -31,7 +30,7 @@ az_result dcf_tcp_client_send(NX_PACKET_POOL* pool_ptr, ULONG server_ip_address)
     else if((status =  nx_packet_allocate(pool_ptr, &packet_ptr, NX_TCP_PACKET, NX_WAIT_FOREVER)))
     {
         printf("Error allocating packet (0x%04x)\r\n", status);
-        result = AZ_ERROR_CANCELED;
+        result = AZ_ERROR_OUT_OF_MEMORY;
     }
 
     // write buffer to packet
@@ -54,9 +53,10 @@ az_result dcf_tcp_client_send(NX_PACKET_POOL* pool_ptr, ULONG server_ip_address)
         printf("Error sending packet to TCP server (0x%04x)\r\n", status);
         result = AZ_ERROR_CANCELED;
     }
+
     else
     {
-        printf("Successfully sent packet: %s\r\n", DEMO_DATA);
+        printf("Successfully sent buffer: %s\r\n", DEMO_DATA);
         result = AZ_OK;
     }
 
@@ -65,6 +65,64 @@ az_result dcf_tcp_client_send(NX_PACKET_POOL* pool_ptr, ULONG server_ip_address)
     {
         printf("Error disconnecting from TCP server (0x%04x)\r\n", status);
         result = AZ_ERROR_CANCELED;
+    }
+
+    return result;
+}
+
+az_result dcf_tcp_client_receive(NX_PACKET_POOL* pool_ptr, ULONG server_ip_address, UINT server_port)
+{
+    az_result result; // this is a dcf function, so we will return az_result
+    UINT status; // for wifi functions
+
+    // initialize TCP connection objects
+    NX_TCP_SOCKET socket_ptr;
+    NXD_ADDRESS server_ip;
+    server_ip.nxd_ip_version = NX_IP_VERSION_V4;
+    server_ip.nxd_ip_address.v4 = server_ip_address;
+
+    // packet variables
+    NX_PACKET* packet_ptr;
+
+    // Connect to server
+    while(1)
+    {
+        printf("Connecting to TCP server\r\n\r\n");
+        if ((status = nx_wifi_tcp_client_socket_connect(&socket_ptr,
+                                            &server_ip,
+                                            server_port,
+                                            0)))
+        {
+            printf("Error connecting to TCP server (0x%04x)\r\n", status);
+            result = AZ_ERROR_CANCELED;
+        }
+
+        // allocate packet
+        else if((status =  nx_packet_allocate(pool_ptr, &packet_ptr, NX_TCP_PACKET, NX_WAIT_FOREVER)))
+        {
+            printf("Error allocating packet (0x%04x)\r\n", status);
+            result = AZ_ERROR_OUT_OF_MEMORY;
+        }
+
+        // send packet to tcp server
+        else if ((status = nx_wifi_tcp_socket_receive(&socket_ptr, &packet_ptr, NX_WAIT_FOREVER)))
+        {
+            printf("Error sending packet to TCP server (0x%04x)\r\n", status);
+            result = AZ_ERROR_CANCELED;
+        }
+
+        else
+        {
+            printf("Received buffer: %s\r\n", (CHAR*)packet_ptr->nx_packet_data_start);
+            result = AZ_OK;
+        }
+
+        // Disconnect from server
+        if ((status = nx_wifi_tcp_socket_disconnect(&socket_ptr, 0)))
+        {
+            printf("Error disconnecting from TCP server (0x%04x)\r\n", status);
+            result = AZ_ERROR_CANCELED;
+        }
     }
 
     return result;

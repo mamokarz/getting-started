@@ -34,6 +34,7 @@
 #define INSTALL_COMMAND             "install"
 #define UNINSTALL_COMMAND           "uninstall"
 #define TCP_SEND_COMMAND            "tcp_send"
+#define TCP_RECEIVE_COMMAND         "tcp_receive"
 
 #define TELEMETRY_INTERVAL_EVENT 1
 
@@ -208,7 +209,7 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
             printf("ERROR: Packet pool create fail.\r\n");
             return;
         }
-        if((result = dcf_tcp_client_send(&tcp_pool, IP_ADDRESS(192, 168, 1, 29))) == AZ_OK)
+        if((result = dcf_tcp_client_send(&tcp_pool, IP_ADDRESS(192, 168, 1, 29), 9999)) == AZ_OK)
         {
             nx_packet_pool_delete(&tcp_pool);
             http_status = 200;
@@ -220,6 +221,34 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
         {   
             nx_packet_pool_delete(&tcp_pool);
             printf("TCP Send Failure!\r\n");
+            return;
+        }
+    }
+    else if (strncmp((CHAR*)method, TCP_RECEIVE_COMMAND, method_length) == 0)
+    {
+        az_result result;
+        NX_PACKET_POOL tcp_pool;
+        printf("Receive TCP data!\r\n");
+        // create temporary packet pool
+        status = nx_packet_pool_create(&tcp_pool, "DCF Packet Pool", DCF_PACKET_SIZE, dcf_ip_pool, DCF_POOL_SIZE);
+        if (status != NX_SUCCESS)
+        {
+            nx_packet_pool_delete(&tcp_pool);
+            printf("ERROR: Packet pool create fail.\r\n");
+            return;
+        }
+        if((result = dcf_tcp_client_receive(&tcp_pool, IP_ADDRESS(192, 168, 1, 29), 9999)) == AZ_OK)
+        {
+            nx_packet_pool_delete(&tcp_pool);
+            http_status = 200;
+            http_response = "{ \"description\":\"TCP packet sent successfully.\" }";
+            printf("TCP Receive Success!\r\n");
+            return;
+        }
+        else
+        {   
+            nx_packet_pool_delete(&tcp_pool);
+            printf("TCP Receive Failure!\r\n");
             return;
         }
     }
