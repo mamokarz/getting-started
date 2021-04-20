@@ -18,6 +18,7 @@ set(SOURCES
 add_subdirectory(cipher)
 add_subdirectory(az_ulib_dm)
 add_subdirectory(dcf_tcp_gateways)
+add_subdirectory(sprinkler)
 
 function(create_target TARGET STARTUP LINKER)
     add_executable(${TARGET}
@@ -30,9 +31,10 @@ function(create_target TARGET STARTUP LINKER)
         azrtos::netxduo
 
         az::ulib
-        az::adu
+        az::dm
         cipher
         dcf_tcp_gateways
+        sprinkler
 
         stm32cubel4
         netx_driver

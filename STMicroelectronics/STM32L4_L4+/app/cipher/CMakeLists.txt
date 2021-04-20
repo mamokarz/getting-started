@@ -11,10 +11,9 @@ add_library(cipher
   ${CMAKE_CURRENT_LIST_DIR}/cipher_v2i1/interfaces/cipher_v2i1_interface.c
 )
 
-#Add include directories for this target and anyone linking against it
 target_include_directories(cipher
   PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}/interfaces
+    ${CMAKE_CURRENT_LIST_DIR}
     ${CMAKE_CURRENT_LIST_DIR}/cipher_v1i1
     ${CMAKE_CURRENT_LIST_DIR}/cipher_v1i1/interfaces
     ${CMAKE_CURRENT_LIST_DIR}/cipher_v2i1
