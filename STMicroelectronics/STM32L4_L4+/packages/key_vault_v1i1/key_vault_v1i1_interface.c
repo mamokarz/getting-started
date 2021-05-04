@@ -9,10 +9,9 @@
  *
  ********************************************************************/
 
-#include "key_vault_v1i1_interface.h"
 #include "az_ulib_capability_api.h"
 #include "az_ulib_descriptor_api.h"
-#include "az_ulib_ipc_wrapper.h"
+#include "az_ulib_ipc_interface.h"
 #include "az_ulib_result.h"
 #include "key_vault_1_model.h"
 #include "key_vault_v1i1.h"
@@ -132,7 +131,8 @@ static az_result key_vault_1_decrypt_span_wrapper(az_span model_in_span, az_span
   return AZ_ULIB_TRY_RESULT;
 }
 
-static const az_ulib_capability_descriptor KEY_VAULT_1_CAPABILITIES[KEY_VAULT_1_CAPABILITY_SIZE] = {
+static const az_ulib_capability_descriptor 
+KEY_VAULT_1_CAPABILITIES[KEY_VAULT_1_CAPABILITY_SIZE] = {
   AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
       KEY_VAULT_1_ENCRYPT_COMMAND_NAME,
       key_vault_1_encrypt_concrete, 
@@ -143,18 +143,19 @@ static const az_ulib_capability_descriptor KEY_VAULT_1_CAPABILITIES[KEY_VAULT_1_
       key_vault_1_decrypt_span_wrapper)
 };
 
-static const az_ulib_interface_descriptor KEY_VAULT_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
+static const az_ulib_interface_descriptor 
+KEY_VAULT_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
     KEY_VAULT_1_INTERFACE_NAME,
     KEY_VAULT_1_INTERFACE_VERSION,
     KEY_VAULT_1_CAPABILITY_SIZE,
     KEY_VAULT_1_CAPABILITIES);
 
-az_result publish_key_vault_v1i1_interface(void)
+az_result publish_interface(const az_ulib_ipc_vtable* const vtable)
 {
-  return az_ulib_ipc_publish(&KEY_VAULT_1_DESCRIPTOR, NULL);
+  return vtable->publish(&KEY_VAULT_1_DESCRIPTOR, NULL);
 }
 
-az_result unpublish_key_vault_v1i1_interface(void)
+az_result unpublish_interface(const az_ulib_ipc_vtable* const vtable)
 {
-  return az_ulib_ipc_unpublish(&KEY_VAULT_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
+  return azi_ulib_ipc_unpublish(vtable, &KEY_VAULT_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
 }

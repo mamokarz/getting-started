@@ -5,7 +5,6 @@
 #include "key_vault_v1i1.h"
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
-#include "key_vault_v1i1_interface.h"
 #include <inttypes.h>
 #include <stdint.h>
 
@@ -290,14 +289,4 @@ az_result key_vault_v1i1_decrypt(az_span src, az_span* dest)
   AZ_ULIB_CATCH(...) { return AZ_ULIB_TRY_RESULT; }
 
   return AZ_OK;
-}
-
-void module_start(unsigned long id)
-{
-  (void)publish_key_vault_v1i1_interface();
-}
-
-void module_stop(unsigned long id)
-{
-  (void)unpublish_key_vault_v1i1_interface();
 }

@@ -1,18 +1,16 @@
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x00030000, LENGTH = 0x00010000
-  RAM   (wx) : ORIGIN = 0, LENGTH = 0x00100000
+  FLASH (rx) : ORIGIN = 0x08050000, LENGTH = 0x00005FFF
+  RAM   (wx) : ORIGIN = 0, LENGTH = 0
 }
 
 
 SECTIONS
 {
-  __FLASH_segment_start__ = 0x00030000;
-  __FLASH_segment_end__   = 0x00040000;
+  __FLASH_segment_start__ = 0x08050000;
+  __FLASH_segment_end__   = 0x08005FFF;
   __RAM_segment_start__   = 0;
-  __RAM_segment_end__     = 0x8000;
-
-  __HEAPSIZE__ = 128;
+  __RAM_segment_end__     = 0;
 
   __preamble_load_start__ = __FLASH_segment_start__;
   .preamble __FLASH_segment_start__ : AT(__FLASH_segment_start__)
@@ -197,16 +195,6 @@ SECTIONS
   }
   __non_init_end__ = __non_init_start__ + SIZEOF(.non_init);
 
-  __heap_load_start__ = ALIGN(__non_init_end__ , 4);
-  .heap ALIGN(__non_init_end__ , 4) (NOLOAD) : AT(ALIGN(__non_init_end__ , 4))
-  {
-    __heap_start__ = .;
-    *(.heap)
-    . = ALIGN(MAX(__heap_start__ + __HEAPSIZE__ , .), 4);
-  }
-  __heap_end__ = __heap_start__ + SIZEOF(.heap);
-
-  __data_size__ =  __heap_end__ - __RAM_segment_start__;
+  __data_size__ =  __non_init_end__ - __RAM_segment_start__;
 
 }
-

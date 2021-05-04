@@ -14,6 +14,9 @@
 #define AZ_ULIB_DM_API_H
 
 #include "az_ulib_result.h"
+#include "az_ulib_pal_os_api.h"
+#include "az_ulib_port.h"
+#include "dm_1_model.h"
 #include "azure/az_core.h"
 
 #ifndef __cplusplus
@@ -24,6 +27,19 @@
 
 #include "azure/core/_az_cfg_prefix.h"
 
+#define AZ_ULIB_CONFIG_MAX_DM_PACKAGES 5
+#define AZ_ULIB_CONFIG_MAX_DM_PACKAGE_NAME 32
+
+#define AZ_ULIB_DM_PACKAGE_PUBLISH 16
+#define AZ_ULIB_DM_PACKAGE_UNPUBLISH 17
+
+typedef struct
+{
+  az_span name;
+  uint8_t name_buf[AZ_ULIB_CONFIG_MAX_DM_PACKAGE_NAME];
+  void* address;
+} _az_ulib_dm_package;
+
 /**
  * @brief DM handle.
  */
@@ -31,7 +47,8 @@ typedef struct az_ulib_dm_tag
 {
   struct
   {
-    uint8_t placeholder;
+    az_ulib_pal_os_lock lock;
+    _az_ulib_dm_package package_list[AZ_ULIB_CONFIG_MAX_DM_PACKAGES];
   } _internal;
 } az_ulib_dm;
 
@@ -77,6 +94,8 @@ AZ_NODISCARD az_result az_ulib_dm_deinit(void);
 /**
  * @brief   Install a new package in the device.
  *
+ * @param[in]   source_type     The #dm_1_source_type with the package source type.
+ * @param[in]   address         The `void*` with the memory where package shall be.
  * @param[in]   package_name    The `az_span` with the package name.
  * 
  * @pre     DM shall already been initialized.
@@ -87,7 +106,7 @@ AZ_NODISCARD az_result az_ulib_dm_deinit(void);
  *  @retval #AZ_ERROR_ULIB_ELEMENT_DUPLICATE    If the package is already installed.
  *  @retval #AZ_ERROR_NOT_ENOUGH_SPACE          If there is not enough space to handle the package.
  */
-AZ_NODISCARD az_result az_ulib_dm_install(az_span package_name);
+AZ_NODISCARD az_result az_ulib_dm_install(dm_1_source_type source_type, void* address, az_span package_name);
 
 /**
  * @brief   Uninstall a package from the device.

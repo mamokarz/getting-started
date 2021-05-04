@@ -3,16 +3,9 @@
     .syntax unified
     .section	.preamble,"a",%progbits
 
-    /* Define public symbols.  */
-    .global __txm_module_preamble
-
     /* Define application-specific start/stop entry points for the module.  */
-    .global module_start
-    .global module_stop
-
-    /* Define common external refrences.  */
-    .global _txm_module_thread_shell_entry
-    .global _txm_module_callback_request_thread_entry
+    .global publish_interface
+    .global unpublish_interface
 
 __txm_module_preamble:
     .dc.l      0x4D4F4455                                       // Module ID
@@ -20,7 +13,7 @@ __txm_module_preamble:
     .dc.l      0x1                                              // Module Minor Version
     .dc.l      32                                               // Module Preamble Size in 32-bit words
     .dc.l      0x12345678                                       // Module ID (application defined)
-    .dc.l      0x02000007                                       // Module Properties where:
+    .dc.l      0x02000004                                       // Module Properties where:
                                                                 //   Bits 31-24: Compiler ID
                                                                 //           0 -> IAR
                                                                 //           1 -> ARM
@@ -32,18 +25,18 @@ __txm_module_preamble:
                                                                 //           1 -> MPU protection (must have user mode selected - bit 0 set)
                                                                 //   Bit 0:  0 -> Privileged mode execution
                                                                 //           1 -> User mode execution
-    .dc.l      _txm_module_thread_shell_entry - . - 0           // Module Shell Entry Point
-    .dc.l      module_start - . - 0                             // Module Start Thread Entry Point
-    .dc.l      module_stop - . - 0                              // Module Stop Thread Entry Point 
-    .dc.l      1                                                // Module Start/Stop Thread Priority
-    .dc.l      1024                                             // Module Start/Stop Thread Stack Size
-    .dc.l      _txm_module_callback_request_thread_entry - . - 0 // Module Callback Thread Entry
-    .dc.l      1                                                // Module Callback Thread Priority
-    .dc.l      1024                                             // Module Callback Thread Stack Size
+    .dc.l      0                                                // Module Shell Entry Point
+    .dc.l      0                                                // Module Start Thread Entry Point
+    .dc.l      0                                                // Module Stop Thread Entry Point 
+    .dc.l      0                                                // Module Start/Stop Thread Priority
+    .dc.l      0                                                // Module Start/Stop Thread Stack Size
+    .dc.l      0                                                // Module Callback Thread Entry
+    .dc.l      0                                                // Module Callback Thread Priority
+    .dc.l      0                                                // Module Callback Thread Stack Size
     .dc.l      __code_size__                                    // Module Code Size
     .dc.l      __data_size__                                    // Module Data Size
-    .dc.l      0                                                // Reserved 0
-    .dc.l      0                                                // Reserved 1
+    .dc.l      publish_interface - . - 0                        // Publish package interfaces
+    .dc.l      unpublish_interface - . - 0                      // Unpublish package interfaces
     .dc.l      0                                                // Reserved 2
     .dc.l      0                                                // Reserved 3
     .dc.l      0                                                // Reserved 4
