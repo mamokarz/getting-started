@@ -27,7 +27,7 @@ static az_result dm_1_install_concrete(az_ulib_model_in model_in, az_ulib_model_
 {
   (void)model_out;
   const dm_1_install_model_in* const in = (const dm_1_install_model_in* const)model_in;
-  return az_ulib_dm_install(in->package_name);
+  return az_ulib_dm_install(in->source_type, in->address, in->package_name);
 }
 
 static az_result dm_1_install_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -41,7 +41,25 @@ static az_result dm_1_install_span_wrapper(az_span model_in_span, az_span* model
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     while (jr.token.kind != AZ_JSON_TOKEN_END_OBJECT)
     {
-      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(DM_1_INSTALL_PACKAGE_NAME_NAME)))
+      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(DM_1_INSTALL_SOURCE_NAME)))
+      {
+        int32_t type;
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &type));
+        if((type < DM_1_SOURCE_TYPE_IN_MEMORY) || (type > DM_1_SOURCE_TYPE_BUILT_IN))
+        {
+          AZ_ULIB_THROW(AZ_ERROR_UNEXPECTED_CHAR);
+        }        
+        install_model_in.source_type = (dm_1_source_type)type;
+      }
+      else if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(DM_1_INSTALL_ADDRESS_NAME)))
+      {
+        uint32_t add;
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atou32(jr.token.slice, &add));
+        install_model_in.address = NULL + add;
+      }
+      else if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(DM_1_INSTALL_PACKAGE_NAME_NAME)))
       {
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
         install_model_in.package_name

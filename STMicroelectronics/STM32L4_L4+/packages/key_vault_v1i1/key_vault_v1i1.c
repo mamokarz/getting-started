@@ -2,47 +2,19 @@
 // Licensed under the MIT license.
 // See LICENSE file in the project root for full license information.
 
-#include "cipher_v2i1.h"
+#include "key_vault_v1i1.h"
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
-#include "interfaces/cipher_v2i1_interface.h"
 #include <inttypes.h>
 #include <stdint.h>
-#include <stdio.h>
 
-#define NUMBER_OF_KEYS 2
+#define NUMBER_OF_KEYS 1
 #define KEY_SIZE 21
-static const char key[NUMBER_OF_KEYS][KEY_SIZE]
-    = { "12345678912345678901", "h948kfd--fsd{jfh}l2D" };
+static const char key[NUMBER_OF_KEYS][KEY_SIZE] = { "12345678912345678901" };
 
 #define splitInt(intVal, bytePos) (char)((intVal >> (bytePos << 3)) & 0xFF)
 #define joinChars(a, b, c, d) \
   (uint32_t)((uint32_t)a + ((uint32_t)b << 8) + ((uint32_t)c << 16) + ((uint32_t)d << 24))
-
-az_result cipher_v2i1_create(void)
-{
-  az_result result;
-
-  (void)printf("Create producer for cipher v2i1...\r\n");
-
-  if ((result = publish_cipher_v2i1_interface()) != AZ_OK)
-  {
-    (void)printf("Publish interface cipher 1 failed with error %" PRIi32 "\r\n", result);
-  }
-  else
-  {
-    (void)printf("Interface cipher 1 published with success\r\n");
-  }
-
-  return result;
-}
-
-az_result cipher_v2i1_destroy(void)
-{
-  (void)printf("Destroy producer for cipher 1.\r\n");
-
-  return unpublish_cipher_v2i1_interface();
-}
 
 static inline uint32_t next_key_pos(uint32_t cur)
 {
@@ -169,12 +141,12 @@ static size_t numberOfBase64Characters(const char* encodedString)
   return length;
 }
 
-az_result cipher_v2i1_encrypt(uint32_t algorithm, az_span src, az_span* dest)
+az_result key_vault_v1i1_encrypt(uint32_t algorithm, az_span src, az_span* dest)
 {
   AZ_ULIB_TRY
   {
-    AZ_ULIB_THROW_IF_ERROR((algorithm < NUMBER_OF_KEYS), AZ_ERROR_NOT_SUPPORTED);
-    AZ_ULIB_THROW_IF_ERROR((encoded_len(src) <= az_span_size(*dest)), AZ_ERROR_NOT_ENOUGH_SPACE);
+     AZ_ULIB_THROW_IF_ERROR((algorithm < NUMBER_OF_KEYS), AZ_ERROR_NOT_SUPPORTED);
+     AZ_ULIB_THROW_IF_ERROR((encoded_len(src) <= az_span_size(*dest)), AZ_ERROR_NOT_ENOUGH_SPACE);
 
     uint32_t key_pos = 0;
     char* dest_str = (char*)az_span_ptr(*dest);
@@ -239,7 +211,7 @@ az_result cipher_v2i1_encrypt(uint32_t algorithm, az_span src, az_span* dest)
   return AZ_OK;
 }
 
-az_result cipher_v2i1_decrypt(az_span src, az_span* dest)
+az_result key_vault_v1i1_decrypt(az_span src, az_span* dest)
 {
   AZ_ULIB_TRY
   {
