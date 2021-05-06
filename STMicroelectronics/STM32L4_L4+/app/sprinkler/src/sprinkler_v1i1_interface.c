@@ -27,7 +27,7 @@ static az_result sprinkler_1_water_now_concrete(az_ulib_model_in model_in, az_ul
 {
   (void)model_out;
   const sprinkler_1_water_now_model_in* const in = (const sprinkler_1_water_now_model_in* const)model_in;
-  return sprinkler_v1i1_water_now(in->timer);
+  return sprinkler_v1i1_water_now(in->area, in->timer);
 }
 
 static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -39,8 +39,14 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
     sprinkler_1_water_now_model_in water_now_model_in = { 0 };
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_init(&jr, model_in_span, NULL));
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
+    AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     while (jr.token.kind != AZ_JSON_TOKEN_END_OBJECT)
     {
+      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(SPRINKLER_1_AREA_NAME)))
+      {
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &(water_now_model_in.area)));
+      }
       if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(SPRINKLER_1_TIMER_NAME)))
       {
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
@@ -64,8 +70,8 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
 static az_result sprinkler_1_stop_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
 {
   (void)model_in;
-  (void)model_out;
-  return sprinkler_v1i1_stop();
+  const sprinkler_1_stop_model_in* const in = (const sprinkler_1_stop_model_in* const)model_in;
+  return sprinkler_v1i1_stop(in->area);
 }
 
 static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -73,10 +79,24 @@ static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* m
   AZ_ULIB_TRY
   {
     // Unmarshalling empty JSON in model_in_span to stop_model_in.
-    (void)model_in_span;
+    az_json_reader jr;
+    sprinkler_1_stop_model_in stop_model_in = { 0 };
+    AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_init(&jr, model_in_span, NULL));
+    AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
+    AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
+    while (jr.token.kind != AZ_JSON_TOKEN_END_OBJECT)
+    {
+      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(SPRINKLER_1_AREA_NAME)))
+      {
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &(stop_model_in.area)));
+      }
+      AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
+    }
+    AZ_ULIB_THROW_IF_AZ_ERROR(AZ_ULIB_TRY_RESULT);
 
     // Call.
-    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_1_stop_concrete(NULL, NULL));
+    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_1_stop_concrete((az_ulib_model_in)&stop_model_in, NULL));
 
     // Marshalling empty stop_model_out to JSON in model_out_span.
     *model_out_span = az_span_create_from_str("{}");

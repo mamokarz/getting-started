@@ -23,15 +23,26 @@ az_result sprinkler_v1i1_destroy(void)
   return sprinkler_v1i1_interface_unpublish();
 }
 
-az_result sprinkler_v1i1_water_now(int32_t timer)
+az_result sprinkler_v1i1_water_now(int32_t area, int32_t timer)
 {
-  (void)timer;
+  if((timer != 0) || (area != 0))
+  {
+    return AZ_ERROR_NOT_SUPPORTED;
+  }
+
   BSP_LED_On(LED_GREEN);
+
   return AZ_OK;
 }
 
-az_result sprinkler_v1i1_stop(void)
+az_result sprinkler_v1i1_stop(int32_t area)
 {
+  if(area != 0)
+  {
+    return AZ_ERROR_NOT_SUPPORTED;
+  }
+
   BSP_LED_Off(LED_GREEN);
+
   return AZ_OK;
 }
