@@ -8,10 +8,10 @@ You can use the Azure Portal or an instance on Powershell/bash/other local envir
 
 Device Manager current support install code from 4 different sources.
 
-0. **In memory**: Are the code that was brought to the memory using external interfaces (like JTag).
+0. **In memory**: Is the code that was brought to the memory using external interfaces (like JTag).
 1. **From Blobs** (*not supported yet*): DM will download the code from Blobs using the provided URL.
-2. **From CLI** (*not supported yet*): DM will copy teh code from CLI to the memory.
-3. **Built in**: Are the code build with the OS.
+2. **From CLI** (*not supported yet*): DM will copy the code from CLI to the memory.
+3. **Built in**: Is the code build with the OS.
 
 ## Commands to Run 
 
