@@ -19,9 +19,9 @@ extern "C"
   az_result sprinkler_v1i1_create(void);
   az_result sprinkler_v1i1_destroy(void);
 
-  az_result sprinkler_v1i1_water_now(int32_t timer);
+  az_result sprinkler_v1i1_water_now(int32_t area, int32_t timer);
 
-  az_result sprinkler_v1i1_stop(void);
+  az_result sprinkler_v1i1_stop(int32_t area);
 
 #ifdef __cplusplus
 }
