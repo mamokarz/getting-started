@@ -470,7 +470,7 @@ add-symbol-file build/packages/sprinkler_v2i1/sprinkler_v2i1.elf 0x08057080
 
 ### STM32 ST-Link Utility
 
-Use the same steps as earlier to flash this new package into address `` with the ST-Link Utility tool. Reference this link [How to flash new package into device memory with ST-Link](../../DCF_Demo.md###STM32-ST-Link-Utility) from earlier. 
+Use the same steps as earlier to flash this new package into address `0x08057000` with the ST-Link Utility tool. Reference this link [How to flash new package into device memory with ST-Link](../../DCF_Demo.md###STM32-ST-Link-Utility) from earlier. 
 
 ## Test the New Package
 Now, similar to key_vault_v1i1, you can install sprinkler_v2i1 using `invoke-device-method`. To install sprinker_v2i1 package in the address 134574080 [0x08057000] 
