@@ -567,7 +567,7 @@ Receive direct method: cipher.1.decrypt
 
 
 ### In Memory example
-The current example produces the key_vault_v1i1 package. The CMake will create the key_vault_v1i1.elf and key_vault_v1i1.bin for this package in ".\build\packages\key_vault_v1i1" directory. Before execute the commands bellow, you must shall copy the binary to the MCU internal Flash. The binary was linked to be installed in the memory 0x08050000. One of the ways to do that is using GDB commands.
+The current example produces the key_vault_v1i1 package. The CMake will create the key_vault_v1i1.elf and key_vault_v1i1.bin for this package in ".\build\packages\key_vault_v1i1" directory. Before execute the commands bellow, you should copy the binary to the MCU internal Flash. The binary was linked to be installed in the memory 0x08050000. One of the ways to do that is using GDB commands.
 
 ```
 restore build/packages/key_vault_v1i1/key_vault_v1i1.bin binary 0x08050000
