@@ -13,8 +13,9 @@
 #include "az_ulib_descriptor_api.h"
 #include "az_ulib_ipc_interface.h"
 #include "az_ulib_result.h"
-#include "key_vault_1_model.h"
+#include "azure/az_core.h"
 #include "key_vault_v1i1.h"
+#include "key_vault_1_model.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -157,5 +158,5 @@ az_result publish_interface(const az_ulib_ipc_vtable* const vtable)
 
 az_result unpublish_interface(const az_ulib_ipc_vtable* const vtable)
 {
-  return azi_ulib_ipc_unpublish(vtable, &KEY_VAULT_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
+  return vtable->unpublish(&KEY_VAULT_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
 }
