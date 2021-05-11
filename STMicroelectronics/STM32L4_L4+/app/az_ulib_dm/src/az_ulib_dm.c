@@ -2,11 +2,12 @@
 // Licensed under the MIT license.
 // See LICENSE file in the project root for full license information.
 
+#include "_az_ulib_dm_blob.h"
+#include "_az_ulib_dm_interface.h"
 #include "az_ulib_result.h"
 #include "az_ulib_dm_api.h"
 #include "az_ulib_ipc_api.h"
 #include "az_ulib_ipc_interface.h"
-#include "_az_ulib_dm_interface.h"
 #include "az_ulib_pal_os_api.h"
 #include "az_ulib_port.h"
 #include "azure/az_core.h"
@@ -147,12 +148,18 @@ static az_result install_in_memory(void* base_address, az_span package_name)
 static az_result install_from_blob(void* base_address, az_span package_name)
 {
   _az_PRECONDITION_NOT_NULL(_az_dm_cb);
-  (void)base_address;
-  (void)package_name;
 
-  /* TODO: implement intall from Blobs here. */
+  AZ_ULIB_TRY
+  {
+    AZ_ULIB_THROW_IF_AZ_ERROR(_az_ulib_dm_blob_download(base_address, package_name));
 
-  return AZ_ERROR_NOT_IMPLEMENTED;
+    az_span name = AZ_SPAN_EMPTY;
+    AZ_ULIB_THROW_IF_AZ_ERROR(_az_ulib_dm_blob_get_package_name(package_name, &name));
+    AZ_ULIB_THROW_IF_AZ_ERROR(install_in_memory(base_address, name));
+  }
+  AZ_ULIB_CATCH(...) {}
+
+  return AZ_ULIB_TRY_RESULT;
 }
 
 static az_result install_from_cli(void* base_address, az_span package_name)
