@@ -38,20 +38,6 @@ void azure_thread_entry(ULONG parameter)
 
     printf("\r\nStarting Azure thread\r\n\r\n");
 
-    //Start DCF.
-    if((result = az_ulib_ipc_init(&_az_ipc_handle)) != AZ_OK)
-    {
-        (void)printf("Initialize IPC failed with code %" PRIi32 ".\r\n", result);
-        return;
-    }
-
-    //Start Device Manager
-    if((result = az_ulib_dm_init(&_az_dm_handle)) != AZ_OK)
-    {
-        (void)printf("Initialize Device Manager failed with code %" PRIi32 ".\r\n", result);
-        return;
-    }
-
     // Initialize the network
     if (stm32_network_init(WIFI_SSID, WIFI_PASSWORD, WIFI_MODE) != NX_SUCCESS)
     {
@@ -72,6 +58,20 @@ void azure_thread_entry(ULONG parameter)
     if (status != NX_SUCCESS)
     {
         printf("Failed to start sync SNTP time (0x%02x)\r\n", status);
+        return;
+    }
+
+    //Start DCF.
+    if((result = az_ulib_ipc_init(&_az_ipc_handle)) != AZ_OK)
+    {
+        (void)printf("Initialize IPC failed with code %" PRIi32 ".\r\n", result);
+        return;
+    }
+
+    //Start Device Manager
+    if((result = az_ulib_dm_init(&_az_dm_handle)) != AZ_OK)
+    {
+        (void)printf("Initialize Device Manager failed with code %" PRIi32 ".\r\n", result);
         return;
     }
 
