@@ -13,14 +13,16 @@
 #include "wifi.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define             USER_AGENT_NAME     "User-Agent: "
 #define             USER_AGENT_VALUE    "Azure RTOS Device (STM32)"
 #define             DNS_SERVER_ADDRESS  IP_ADDRESS(192,168,1,1)
 #define             DCF_PACKET_SIZE     (NX_WEB_HTTP_CLIENT_MIN_PACKET_SIZE * 2)
-#define             DCF_PACKET_COUNT    5
+#define             DCF_PACKET_COUNT    2
 #define             DCF_POOL_SIZE       ((DCF_PACKET_SIZE + sizeof(NX_PACKET)) * DCF_PACKET_COUNT)
 static UCHAR        dcf_ip_pool[DCF_POOL_SIZE]; // DCF
+static CHAR         receive_buffer[DCF_PACKET_SIZE + 1];
 
 static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* slice)
 {
@@ -155,25 +157,6 @@ static az_result get_ip_from_uri(az_span uri, NXD_ADDRESS* ip)
   return AZ_ULIB_TRY_RESULT;
 }
 
-/* Setup a callback to print out header information as it is processed. */
-VOID http_response_callback(NX_WEB_HTTP_CLIENT *client_ptr, CHAR *field_name,
-    UINT field_name_length, CHAR *field_value,
-    UINT field_value_length)
-{
-    CHAR name[100];
-    CHAR value[100];
-    memset(name, 0, sizeof(name));
-
-    memset(value, 0, sizeof(value));
-
-    strncpy(name, field_name, field_name_length);
-    strncpy(value, field_value, field_value_length);
-
-    printf("Received header: \r\n");
-    printf("\tField name: %s (%d bytes)\r\n", name, field_name_length);
-    printf("\tValue: %s (%d bytes)\r\n\n", value, field_value_length);
-}
-
 AZ_NODISCARD az_result _az_ulib_dm_blob_get_package_name(az_span url, az_span* name)
 {
   AZ_ULIB_TRY
@@ -195,11 +178,11 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_get_size(az_span url, int32_t* size)
 AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
 {
   (void)address;
-    NX_WEB_HTTP_CLIENT  http_client;
-    NX_PACKET_POOL      client_pool;
-    NX_PACKET*          packet_ptr;
-    CHAR                receive_buffer[DCF_PACKET_SIZE];
-    ULONG               buffer_bytes; 
+  NX_WEB_HTTP_CLIENT http_client;
+  NX_PACKET_POOL client_pool;
+  NX_PACKET* packet_ptr;
+  bool shall_delete_http_client = false;
+  bool shall_delete_client_pool = false;
 
   AZ_ULIB_TRY
   {
@@ -218,16 +201,12 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
             dcf_ip_pool, 
             DCF_POOL_SIZE) == NX_SUCCESS),
         AZ_ERROR_ULIB_SYSTEM);
+    shall_delete_client_pool = true;
 
     AZ_ULIB_THROW_IF_ERROR(
         (nx_web_http_client_create(&http_client, "HTTP Client", &nx_ip,
 					&client_pool, 600) == NX_SUCCESS), AZ_ERROR_ULIB_SYSTEM);
-
-    /* Assign the callback to the HTTP client instance. */
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_web_http_client_response_header_callback_set(&http_client, 
-            http_response_callback) == NX_SUCCESS), 
-        AZ_ERROR_ULIB_SYSTEM);
+    shall_delete_http_client = true;
 
     /* Allocate memory for NX_PACKET */
     nx_packet_allocate(&client_pool, &packet_ptr, NX_TCP_PACKET, NX_WAIT_FOREVER);
@@ -274,41 +253,42 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
         AZ_ERROR_ULIB_SYSTEM);
 
     /* Receive response data from the server. Loop until all data is received. */
-    printf("9\r\n");
+    printf("Received package:\r\n");
     UINT get_status = NX_SUCCESS;
-    while(get_status != NX_WEB_HTTP_GET_DONE)
+    while(get_status == NX_SUCCESS)
     {
-        get_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, NX_WAIT_FOREVER);
+      get_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
+      if((get_status == NX_SUCCESS) || (get_status == NX_WEB_HTTP_GET_DONE))
+      {
+        az_span data = az_span_create(
+            packet_ptr->nx_packet_prepend_ptr, 
+            packet_ptr->nx_packet_length);
 
-        /* Check for error.  */
-        if (get_status != NX_SUCCESS && get_status != NX_WEB_HTTP_GET_DONE)
-        {
-            printf("HTTP get packet failed, error: 0x%x\r\n", get_status);
-            AZ_ULIB_THROW(AZ_ERROR_ULIB_SYSTEM);
-        }
-        else
-        {
-            AZ_ULIB_THROW_IF_ERROR(
-              (nx_packet_data_extract_offset(packet_ptr, 
-                                              0, 
-                                              receive_buffer, 
-                                              buffer_bytes, 
-                                              &buffer_bytes) == NX_SUCCESS),
-                AZ_ERROR_ULIB_SYSTEM);
-           
-            receive_buffer[buffer_bytes] = 0;
-            printf("Received data: %s\r\n", receive_buffer);
-            nx_packet_release(packet_ptr);
-        }
-    }  
+        // TODO: Save `data` to the Flash instead of print it.
+        // TODO: Remove all printf() from this function.
+        // TODO: Delete `receive_buffer`. 
+        az_span_to_str(receive_buffer, DCF_PACKET_SIZE + 1, data);
+        printf("%s", receive_buffer);
+        
+        nx_packet_release(packet_ptr);
+      }
+    } 
+    if(get_status != NX_WEB_HTTP_GET_DONE)
+    {
+      AZ_ULIB_THROW(AZ_ERROR_ULIB_SYSTEM);
+    }
+    printf("\r\nEnd of package\r\n");
 
-    nx_packet_pool_delete(&client_pool);
-    nx_web_http_client_delete(&http_client);
-    
   } AZ_ULIB_CATCH(...) {}
 
-  nx_web_http_client_delete(&http_client);
-  nx_packet_pool_delete(&client_pool);
+  if(shall_delete_http_client)
+  {
+    nx_web_http_client_delete(&http_client);
+  }
+  if(shall_delete_client_pool)
+  {
+    nx_packet_pool_delete(&client_pool);
+  }
 
   return AZ_ULIB_TRY_RESULT;
 }
