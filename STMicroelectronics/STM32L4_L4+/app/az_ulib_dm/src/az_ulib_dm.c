@@ -113,36 +113,34 @@ static az_result install_built_in(az_span package_name)
 static az_result install_in_memory(void* base_address, az_span package_name)
 {
   _az_PRECONDITION_NOT_NULL(_az_dm_cb);
-  az_result result;
 
-  if(get_package(package_name) != NULL)
+  AZ_ULIB_TRY
   {
-    result = AZ_ERROR_ULIB_ELEMENT_DUPLICATE;
-  }
-  else
-  {
+    /* Is this a knowing package? */
+    AZ_ULIB_THROW_IF_ERROR((*(uint32_t*)base_address == 0x4D4F4455), AZ_ERROR_ULIB_INCOMPATIBLE_VERSION);
+
+    /* Does the package already exist? */
+    AZ_ULIB_THROW_IF_ERROR((get_package(package_name) == NULL), AZ_ERROR_ULIB_ELEMENT_DUPLICATE);
+
+    /* Check for available space to store the package information. */
+    _az_ulib_dm_package* package = get_first_package_free();
+    AZ_ULIB_THROW_IF_ERROR((package != NULL), AZ_ERROR_NOT_ENOUGH_SPACE);
+
+    /* Call the publsh interface function in the package. */
     uint32_t publish_position = *((uint32_t*)base_address + AZ_ULIB_DM_PACKAGE_PUBLISH);
     publish_interface publish = (publish_interface)((uint8_t*)base_address + publish_position + 
         (AZ_ULIB_DM_PACKAGE_PUBLISH << 2));
     const az_ulib_ipc_vtable* vtable = az_ulib_ipc_get_vtable();
-    if((result = publish(vtable)) == AZ_OK)
-    {
-      _az_ulib_dm_package* package = get_first_package_free();
-      if(package == NULL)
-      {
-        result = AZ_ERROR_NOT_ENOUGH_SPACE;
-      }
-      else
-      {
-        az_span_copy(package->name, package_name);
-        package->name = az_span_create(az_span_ptr(package->name), az_span_size(package_name));
-        package->address = base_address;
-        result = AZ_OK;
-      }
-    }
-  }
+    AZ_ULIB_THROW_IF_AZ_ERROR(publish(vtable));
 
-  return result;
+    /* Store package information. */
+    az_span_copy(package->name, package_name);
+    package->name = az_span_create(az_span_ptr(package->name), az_span_size(package_name));
+    package->address = base_address;
+  }
+  AZ_ULIB_CATCH(...) {}
+
+  return AZ_ULIB_TRY_RESULT;
 }
 
 static az_result install_from_blob(void* base_address, az_span package_name)

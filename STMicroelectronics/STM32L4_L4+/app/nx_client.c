@@ -180,6 +180,10 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
                 http_status = 400;
                 error_str = "AZ_ERROR_UNEXPECTED_CHAR";
             break;
+            case AZ_ERROR_ULIB_SYSTEM:
+                http_status = 500;
+                error_str = "AZ_ERROR_ULIB_SYSTEM";
+            break;
             case AZ_ERROR_ITEM_NOT_FOUND:
                 http_status = 404;
                 error_str = "AZ_ERROR_ITEM_NOT_FOUND";
@@ -188,9 +192,17 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
                 http_status = 405;
                 error_str = "AZ_ERROR_NOT_SUPPORTED";
             break;
+            case AZ_ERROR_NOT_IMPLEMENTED:
+                http_status = 501;
+                error_str = "AZ_ERROR_NOT_IMPLEMENTED";
+            break;
             case AZ_ERROR_ULIB_BUSY:
-                http_status = 500;
+                http_status = 503;
                 error_str = "AZ_ERROR_ULIB_BUSY";
+            break;                
+            case AZ_ERROR_ULIB_INCOMPATIBLE_VERSION:
+                http_status = 400;
+                error_str = "AZ_ERROR_ULIB_INCOMPATIBLE_VERSION";
             break;                
             default:
                 http_status = 400;
