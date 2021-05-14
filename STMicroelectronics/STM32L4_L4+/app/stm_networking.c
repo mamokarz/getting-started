@@ -10,7 +10,7 @@
 
 #include "wifi.h"
 
-#define THREADX_PACKET_COUNT 20
+#define THREADX_PACKET_COUNT 10
 #define THREADX_PACKET_SIZE  1200 // Set the default value to 1200 since WIFI payload size (ES_WIFI_PAYLOAD_SIZE) is 1200
 #define THREADX_POOL_SIZE    ((THREADX_PACKET_SIZE + sizeof(NX_PACKET)) * THREADX_PACKET_COUNT)
 

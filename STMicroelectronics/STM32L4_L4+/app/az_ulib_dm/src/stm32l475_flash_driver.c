@@ -1,4 +1,13 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE file in the project root for full license information.
+
 #include "stm32l475_flash_driver.h"
+#include "stm32l4xx.h"
+#include "stm32l475xx.h"
+#include "stm32l4xx_hal.h"
+
+#include <stdint.h>
 
 /* Define the bank2 address for new firmware.  */
 #define FLASH_BANK2_ADDR                (FLASH_BASE + FLASH_BANK_SIZE)
@@ -15,7 +24,7 @@ static union
 static int remainder_count;
 
 /* Write firmware into internal flash.  */
-int internal_flash_write(unsigned char* destination_ptr, unsigned char* source_ptr, unsigned int size)
+HAL_StatusTypeDef internal_flash_write(unsigned char* destination_ptr, unsigned char* source_ptr, unsigned int size)
 {
 
 HAL_StatusTypeDef       status;
@@ -77,7 +86,7 @@ HAL_StatusTypeDef       status;
         }
     }
     HAL_FLASH_Lock();
-    return 0;
+    return HAL_OK;
 }
 
 // Specific helper function for erasing flash for STM32L4, only erases the last page
@@ -112,23 +121,18 @@ HAL_StatusTypeDef internal_flash_erase(unsigned char* destination_ptr, unsigned 
 	EraseInitStruct.NbPages = numPages;
         
 	uint32_t PageError;
-
-    if (HAL_FLASHEx_Erase(&EraseInitStruct, &PageError) == HAL_ERROR) 
+    HAL_StatusTypeDef status;
+    if ((status = HAL_FLASHEx_Erase(&EraseInitStruct, &PageError)) == HAL_ERROR) 
     {
-        if (HAL_FLASHEx_Erase(&EraseInitStruct, &PageError) == HAL_ERROR) 
-        {
-            // HAL_FLASHEx_Erase() requires two calls to work, if fails a second time then exit
-            // lock flash
-            HAL_FLASH_OB_Lock();
-            HAL_FLASH_Lock();
-            return PageError;
-        }
+        // HAL_FLASHEx_Erase() requires two calls to work, if fails a second time then exit
+        // lock flash
+        status = HAL_FLASHEx_Erase(&EraseInitStruct, &PageError);
     }
 	
 	// Lock flash
 	HAL_FLASH_OB_Lock();
 	HAL_FLASH_Lock();		
 	
-	return HAL_OK;
+	return status;
 }
                     
