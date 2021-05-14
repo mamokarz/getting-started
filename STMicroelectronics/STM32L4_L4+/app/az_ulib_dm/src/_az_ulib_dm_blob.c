@@ -17,12 +17,12 @@
 
 #define             USER_AGENT_NAME     "User-Agent: "
 #define             USER_AGENT_VALUE    "Azure RTOS Device (STM32)"
-#define             DNS_SERVER_ADDRESS  IP_ADDRESS(192,168,1,1)
+#define             DNS_SERVER_ADDRESS  IP_ADDRESS(192,168,221,125)
 #define             DCF_PACKET_SIZE     (NX_WEB_HTTP_CLIENT_MIN_PACKET_SIZE * 2)
 #define             DCF_PACKET_COUNT    2
 #define             DCF_POOL_SIZE       ((DCF_PACKET_SIZE + sizeof(NX_PACKET)) * DCF_PACKET_COUNT)
 static UCHAR        dcf_ip_pool[DCF_POOL_SIZE]; // DCF
-static CHAR         receive_buffer[DCF_PACKET_SIZE + 1];
+// static CHAR         receive_buffer[DCF_PACKET_SIZE + 1];
 
 static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* slice)
 {
@@ -255,6 +255,18 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
     /* Receive response data from the server. Loop until all data is received. */
     printf("Received package:\r\n");
     UINT get_status = NX_SUCCESS;
+
+    // prepare flash by erasing pages
+    // TODO: Replace package_size with actual package size fetched from blob
+    unsigned int package_size =  0x10000; // for the first package
+    if (internal_flash_erase((UCHAR*)address, package_size))
+    {
+      printf("Error in erasing flash at address");
+    }
+
+    // Download destination pointer, increase after every packet is stored
+    UINT total_downloaded_size = 0;
+
     while(get_status == NX_SUCCESS)
     {
       get_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
@@ -267,8 +279,17 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
         // TODO: Save `data` to the Flash instead of print it.
         // TODO: Remove all printf() from this function.
         // TODO: Delete `receive_buffer`. 
-        az_span_to_str(receive_buffer, DCF_PACKET_SIZE + 1, data);
-        printf("%s", receive_buffer);
+        // az_span_to_str(receive_buffer, DCF_PACKET_SIZE + 1, data);
+        // printf("%s", receive_buffer);
+
+        // calculate destination pointer
+        UCHAR *dest_ptr = (UCHAR*)(address + total_downloaded_size);
+
+        // call store to flash
+        internal_flash_write(dest_ptr, az_span_ptr(data), az_span_size(data));
+
+        // update total package size
+        total_downloaded_size += az_span_size(data);
         
         nx_packet_release(packet_ptr);
       }

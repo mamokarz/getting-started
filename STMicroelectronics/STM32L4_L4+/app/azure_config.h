@@ -23,7 +23,7 @@ typedef enum
 // Azure IoT Dynamic Provisioning Service
 //    Define this to use the DPS service, otherwise direct IoT Hub
 // ----------------------------------------------------------------------------
-#define ENABLE_DPS
+//#define ENABLE_DPS
 
 // ----------------------------------------------------------------------------
 // Azure IoT DPS connection config
