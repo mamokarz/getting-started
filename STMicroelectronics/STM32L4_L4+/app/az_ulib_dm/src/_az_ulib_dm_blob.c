@@ -11,18 +11,14 @@
 #include "stm_networking.h"
 #include "nx_wifi.h"
 #include "wifi.h"
+#include "stm32l475_flash_driver.h"
 
 #include <stdint.h>
 #include <stdbool.h>
 
 #define             USER_AGENT_NAME     "User-Agent: "
 #define             USER_AGENT_VALUE    "Azure RTOS Device (STM32)"
-#define             DNS_SERVER_ADDRESS  IP_ADDRESS(192,168,221,125)
-#define             DCF_PACKET_SIZE     (NX_WEB_HTTP_CLIENT_MIN_PACKET_SIZE * 2)
-#define             DCF_PACKET_COUNT    2
-#define             DCF_POOL_SIZE       ((DCF_PACKET_SIZE + sizeof(NX_PACKET)) * DCF_PACKET_COUNT)
-static UCHAR        dcf_ip_pool[DCF_POOL_SIZE]; // DCF
-// static CHAR         receive_buffer[DCF_PACKET_SIZE + 1];
+#define             DCF_WAIT_TIME       600
 
 static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* slice)
 {
@@ -98,61 +94,20 @@ static az_result split_url(
 
 static az_result get_ip_from_uri(az_span uri, NXD_ADDRESS* ip)
 {
-  NX_DNS client_dns;
-  NX_PACKET* packet_ptr;
-  NX_PACKET_POOL client_pool;
-
   AZ_ULIB_TRY
   {
-    /* Enable UDP traffic because DNS is a UDP based protocol.  */
-    AZ_ULIB_THROW_IF_ERROR((nx_udp_enable(&nx_ip) == NX_SUCCESS), AZ_ERROR_ITEM_NOT_FOUND);
-
-    /* Create a DNS instance for the Client.  Note this function will create
-       the DNS Client packet pool for creating DNS message packets intended
-       for querying its DNS server. */
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_dns_create(&client_dns, &nx_ip, (UCHAR *)"DNS Client") == NX_SUCCESS), 
-        AZ_ERROR_ULIB_SYSTEM);
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_packet_pool_create(
-            &client_pool, 
-            "DCF Packet Pool", 
-            DCF_PACKET_SIZE, 
-            dcf_ip_pool, 
-            DCF_POOL_SIZE) == NX_SUCCESS),
-        AZ_ERROR_ULIB_SYSTEM);
-    
-    /* Use the packet pool created above which has appropriate payload size
-       for DNS messages. */
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_dns_packet_pool_set(&client_dns, &client_pool) == NX_SUCCESS), 
-        AZ_ERROR_ULIB_SYSTEM);
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_packet_allocate(
-            &client_pool, &packet_ptr, NX_TCP_PACKET, NX_WAIT_FOREVER) == NX_SUCCESS), 
-        AZ_ERROR_ULIB_SYSTEM);
-
-    /* Add an IPv4 server address to the Client list. */
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_dns_server_add(&client_dns, DNS_SERVER_ADDRESS) == NX_SUCCESS), 
-        AZ_ERROR_ULIB_SYSTEM);
-
     /* Get the IPv4 for the URI using DNS. */
     char uri_str[50];
     az_span_to_str(uri_str, sizeof(uri_str), uri);
-    AZ_ULIB_THROW_IF_ERROR(
-        (nxd_dns_host_by_name_get(
-            &client_dns,
+    UINT status = nxd_dns_host_by_name_get(
+            &nx_dns_client,
             (UCHAR*)uri_str, 
             ip, 
             NX_IP_PERIODIC_RATE, 
-            NX_IP_VERSION_V4) == NX_SUCCESS), 
-        AZ_ERROR_ULIB_SYSTEM);
+            NX_IP_VERSION_V4);
+    AZ_ULIB_THROW_IF_ERROR((status == NX_SUCCESS), AZ_ERROR_ULIB_SYSTEM);
 
   } AZ_ULIB_CATCH(...) {}
-
-  nx_dns_delete(&client_dns);
-  nx_packet_pool_delete(&client_pool);
 
   return AZ_ULIB_TRY_RESULT;
 }
@@ -175,15 +130,125 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_get_size(az_span url, int32_t* size)
   return AZ_ERROR_NOT_IMPLEMENTED;
 }
 
-AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
+static az_result result_from_nx_status(UINT nx_status)
+{
+  switch(nx_status)
+  {
+    case NX_SUCCESS:              return AZ_OK;
+    case NX_WEB_HTTP_POOL_ERROR:  return AZ_ERROR_NOT_ENOUGH_SPACE;
+    case NX_NO_PACKET:            return AZ_ERROR_NOT_ENOUGH_SPACE;
+    case NX_INVALID_PARAMETERS:   return AZ_ERROR_NOT_SUPPORTED;
+    case NX_OPTION_ERROR:         return AZ_ERROR_ARG;
+    case NX_PTR_ERROR:            return AZ_ERROR_ARG;
+    case NX_CALLER_ERROR:         return AZ_ERROR_ARG;
+    case NX_WEB_HTTP_NOT_READY:   return AZ_ERROR_ULIB_BUSY;
+    case NX_WAIT_ABORTED:         return AZ_ERROR_ULIB_SYSTEM; //should be AZ_ERROR_ULIB_TIME_OUT or AZ_ERROR_ULIB_ABORTED
+    default:                      return AZ_ERROR_ULIB_SYSTEM; 
+  }
+}
+
+static az_result result_from_hal_status(HAL_StatusTypeDef status)
+{
+  switch(status)
+  {
+    case HAL_OK:                  return AZ_OK;
+    case HAL_ERROR:               return AZ_ERROR_ULIB_SYSTEM;
+    case HAL_BUSY:                return AZ_ERROR_ULIB_BUSY;
+    case HAL_TIMEOUT:             return AZ_ERROR_ULIB_SYSTEM; //should be AZ_ERROR_ULIB_TIME_OUT
+    default:                      return AZ_ERROR_ULIB_SYSTEM; 
+  }
+}
+
+static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host, void* address)
 {
   (void)address;
-  NX_WEB_HTTP_CLIENT http_client;
-  NX_PACKET_POOL client_pool;
-  NX_PACKET* packet_ptr;
-  bool shall_delete_http_client = false;
-  bool shall_delete_client_pool = false;
 
+  NX_WEB_HTTP_CLIENT http_client;
+  NX_PACKET* packet_ptr = NULL;
+  UINT nx_status;
+  HAL_StatusTypeDef hal_status;
+
+  if((nx_status = nx_web_http_client_create(&http_client, "HTTP Client", 
+                              &nx_ip, &nx_pool, 1536)) == NX_SUCCESS)
+  {
+    if((nx_status = nx_web_http_client_connect(&http_client, ip, 
+                              NX_WEB_HTTP_SERVER_PORT, DCF_WAIT_TIME)) == NX_SUCCESS)
+    {
+      // prepare flash by erasing pages
+      // TODO: Replace package_size with actual package size fetched from blob
+      unsigned int package_size =  0x00007000; // for the first package
+      if ((hal_status = internal_flash_erase((UCHAR*)address, package_size)) == HAL_OK)
+      {
+        if((nx_status = nx_web_http_client_request_initialize(&http_client,
+                                  NX_WEB_HTTP_METHOD_GET, /* GET, PUT, DELETE, POST, HEAD */
+                                  resource, /* "resource" (usually includes auth headers)*/
+                                  host, /* "host" */
+                                  0, /* Used by PUT and POST */
+                                  NX_FALSE, /* If true, input_size is ignored. */
+                                  NX_NULL, /* "name" */
+                                  NX_NULL, /* "password" */
+                                  DCF_WAIT_TIME)) == NX_SUCCESS)
+        {
+          if((nx_status = nx_web_http_client_request_header_add(&http_client, 
+                                    USER_AGENT_NAME, 
+                                    sizeof(USER_AGENT_NAME) - 1, 
+                                    USER_AGENT_VALUE, 
+                                    sizeof(USER_AGENT_VALUE) - 1, 
+                                    DCF_WAIT_TIME)) == NX_SUCCESS)
+          {
+            nx_status = nx_web_http_client_request_send(&http_client, DCF_WAIT_TIME);
+            // Download destination pointer, increase after every packet is stored
+            uint32_t total_downloaded_size = 0;
+            while(nx_status == NX_SUCCESS)
+            {
+              nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
+              if((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
+              {
+                az_span data = az_span_create(packet_ptr->nx_packet_prepend_ptr, 
+                                              packet_ptr->nx_packet_length);
+
+                // calculate destination pointer
+                uint8_t* dest_ptr = (uint8_t*)(address) + total_downloaded_size;
+
+                // call store to flash
+                if((hal_status = internal_flash_write(
+                                      dest_ptr, az_span_ptr(data), az_span_size(data))) != HAL_OK)
+                {
+                  nx_status = nx_packet_release(packet_ptr);
+                  break;
+                }
+
+                // update total package size
+                total_downloaded_size += az_span_size(data);
+
+                nx_status = nx_packet_release(packet_ptr);
+              }
+            } 
+            
+            if(nx_status == NX_WEB_HTTP_GET_DONE)
+            {
+              nx_status = NX_SUCCESS;
+            }            
+          }
+        }
+      }
+    }
+    nx_status = nx_web_http_client_delete(&http_client);
+  }
+
+  if(nx_status != NX_SUCCESS)
+  {
+    return result_from_nx_status(nx_status);
+  }
+  if(hal_status != HAL_OK)
+  {
+    return result_from_hal_status(hal_status);
+  }
+  return AZ_OK;
+}
+
+AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
+{
   AZ_ULIB_TRY
   {
     az_span uri = AZ_SPAN_EMPTY;
@@ -191,126 +256,16 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
     az_span resource;
     
     AZ_ULIB_THROW_IF_AZ_ERROR(split_url(url, NULL, &uri, &resource, NULL, NULL, NULL, NULL));
+
     AZ_ULIB_THROW_IF_AZ_ERROR(get_ip_from_uri(uri, &ip)); 
     
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_packet_pool_create(
-            &client_pool, 
-            "DCF Packet Pool", 
-            DCF_PACKET_SIZE, 
-            dcf_ip_pool, 
-            DCF_POOL_SIZE) == NX_SUCCESS),
-        AZ_ERROR_ULIB_SYSTEM);
-    shall_delete_client_pool = true;
-
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_web_http_client_create(&http_client, "HTTP Client", &nx_ip,
-					&client_pool, 600) == NX_SUCCESS), AZ_ERROR_ULIB_SYSTEM);
-    shall_delete_http_client = true;
-
-    /* Allocate memory for NX_PACKET */
-    nx_packet_allocate(&client_pool, &packet_ptr, NX_TCP_PACKET, NX_WAIT_FOREVER);
-
-    /* Connect to Server */
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_web_http_client_connect(&http_client, 
-                                    &ip, 
-                                    NX_WEB_HTTP_SERVER_PORT,
-                                    NX_WAIT_FOREVER) == NX_SUCCESS), 
-        AZ_ERROR_ULIB_SYSTEM);
-
-    /* Initialize HTTP request. */
     char host[50];
     az_span_to_str(host, sizeof(host), uri);
     char resource_str[200];
     az_span_to_str(resource_str, sizeof(resource_str), resource);
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_web_http_client_request_initialize(&http_client,
-                                              NX_WEB_HTTP_METHOD_GET, /* GET, PUT, DELETE, POST, HEAD */
-                                              resource_str, /* "resource" (usually includes auth headers)*/
-                                              host, /* "host" */
-                                              0, /* Used by PUT and POST */
-                                              NX_FALSE, /* If true, input_size is ignored. */
-                                              NX_NULL, /* "name" */
-                                              NX_NULL, /* "password" */
-                                              NX_WAIT_FOREVER) == NX_SUCCESS),
-        AZ_ERROR_ULIB_SYSTEM);
-
-    /* Add User-Agent header */                       
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_web_http_client_request_header_add(&http_client, 
-                                          USER_AGENT_NAME, 
-                                          sizeof(USER_AGENT_NAME) - 1, 
-                                          USER_AGENT_VALUE, 
-                                          sizeof(USER_AGENT_VALUE) - 1, 
-                                          NX_WAIT_FOREVER) == NX_SUCCESS),
-        AZ_ERROR_ULIB_SYSTEM);
-
-    /* Send GET request */
-    AZ_ULIB_THROW_IF_ERROR(
-        (nx_web_http_client_request_send(&http_client, 
-                                        NX_WAIT_FOREVER) == NX_SUCCESS),
-        AZ_ERROR_ULIB_SYSTEM);
-
-    /* Receive response data from the server. Loop until all data is received. */
-    printf("Received package:\r\n");
-    UINT get_status = NX_SUCCESS;
-
-    // prepare flash by erasing pages
-    // TODO: Replace package_size with actual package size fetched from blob
-    unsigned int package_size =  0x10000; // for the first package
-    if (internal_flash_erase((UCHAR*)address, package_size))
-    {
-      printf("Error in erasing flash at address");
-    }
-
-    // Download destination pointer, increase after every packet is stored
-    UINT total_downloaded_size = 0;
-
-    while(get_status == NX_SUCCESS)
-    {
-      get_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
-      if((get_status == NX_SUCCESS) || (get_status == NX_WEB_HTTP_GET_DONE))
-      {
-        az_span data = az_span_create(
-            packet_ptr->nx_packet_prepend_ptr, 
-            packet_ptr->nx_packet_length);
-
-        // TODO: Save `data` to the Flash instead of print it.
-        // TODO: Remove all printf() from this function.
-        // TODO: Delete `receive_buffer`. 
-        // az_span_to_str(receive_buffer, DCF_PACKET_SIZE + 1, data);
-        // printf("%s", receive_buffer);
-
-        // calculate destination pointer
-        UCHAR *dest_ptr = (UCHAR*)(address + total_downloaded_size);
-
-        // call store to flash
-        internal_flash_write(dest_ptr, az_span_ptr(data), az_span_size(data));
-
-        // update total package size
-        total_downloaded_size += az_span_size(data);
-        
-        nx_packet_release(packet_ptr);
-      }
-    } 
-    if(get_status != NX_WEB_HTTP_GET_DONE)
-    {
-      AZ_ULIB_THROW(AZ_ERROR_ULIB_SYSTEM);
-    }
-    printf("\r\nEnd of package\r\n");
+    AZ_ULIB_THROW_IF_AZ_ERROR(copy_blob_to_flash(&ip, resource_str, host, address));
 
   } AZ_ULIB_CATCH(...) {}
 
-  if(shall_delete_http_client)
-  {
-    nx_web_http_client_delete(&http_client);
-  }
-  if(shall_delete_client_pool)
-  {
-    nx_packet_pool_delete(&client_pool);
-  }
-
   return AZ_ULIB_TRY_RESULT;
 }
-

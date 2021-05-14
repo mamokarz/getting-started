@@ -138,11 +138,10 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
     char buf[TEMP_BUFFER_SIZE];
     char result_buf[TEMP_BUFFER_SIZE];
     az_span http_response = AZ_SPAN_FROM_BUFFER(result_buf);
+    az_ulib_ipc_interface_handle handle = NULL;
 
     AZ_ULIB_TRY
     {
-        az_ulib_ipc_interface_handle handle = NULL;
-
         strncpy((char*)buf, (const char*)method, (size_t)method_length);
         buf[method_length] = '\0';
         az_span method_full_name = az_span_create_from_str(buf);
@@ -211,6 +210,12 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
         }
         (void)snprintf(result_buf, TEMP_BUFFER_SIZE, "{ \"description\":\"%s\" }", error_str);
         http_response = az_span_create_from_str(result_buf);
+    }
+
+    if(handle != NULL)
+    {
+      az_result result = az_ulib_ipc_release_interface(handle);
+      (void)result;
     }
 
     if ((status = nx_azure_iot_hub_client_direct_method_message_response(&nx_context->iothub_client,

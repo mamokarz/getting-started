@@ -7,8 +7,6 @@
 
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
-#include "stm32l475_flash_driver.h"
-
 
 #ifndef __cplusplus
 #include <stdint.h>
