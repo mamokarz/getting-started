@@ -100,15 +100,13 @@ HAL_StatusTypeDef internal_flash_erase(unsigned char* destination_ptr, unsigned 
     if ((unsigned int)destination_ptr <= FLASH_BANK1_END) 
     {
         bank = FLASH_BANK_1;
-        firstPage = ((unsigned int)destination_ptr-FLASH_BASE)/2048 - 1;
+        firstPage = ((unsigned int)destination_ptr-FLASH_BASE)/2048;
     }
     else
     {
         bank = FLASH_BANK_2;
-        firstPage = ((unsigned int)destination_ptr-FLASH_BANK2_ADDR)/2048 -1;
+        firstPage = ((unsigned int)destination_ptr-FLASH_BANK2_ADDR)/2048;
     }
-
-    
 
 	// unlock flash
 	HAL_FLASH_Unlock();
@@ -132,6 +130,11 @@ HAL_StatusTypeDef internal_flash_erase(unsigned char* destination_ptr, unsigned 
 	// Lock flash
 	HAL_FLASH_OB_Lock();
 	HAL_FLASH_Lock();		
+
+    // set internal variable
+    total_write_size = 0x00007000;
+    remainder_count = -1;
+    write_size = 0;
 	
 	return status;
 }
