@@ -26,9 +26,6 @@ target_link_libraries(az_ulib_dm
   
   stm32cubel4
   netx_driver
-
-  cipher
-  sprinkler
 )
 
 add_library(az::dm ALIAS az_ulib_dm)
