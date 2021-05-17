@@ -45,11 +45,7 @@ static az_result dm_1_install_span_wrapper(az_span model_in_span, az_span* model
       {
         int32_t type;
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
-        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &type));
-        if((type < DM_1_SOURCE_TYPE_IN_MEMORY) || (type > DM_1_SOURCE_TYPE_BUILT_IN))
-        {
-          AZ_ULIB_THROW(AZ_ERROR_UNEXPECTED_CHAR);
-        }        
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &type));     
         install_model_in.source_type = (dm_1_source_type)type;
       }
       else if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(DM_1_INSTALL_ADDRESS_NAME)))

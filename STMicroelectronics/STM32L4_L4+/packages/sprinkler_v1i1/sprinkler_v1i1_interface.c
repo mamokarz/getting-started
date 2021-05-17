@@ -11,10 +11,10 @@
 
 #include "az_ulib_capability_api.h"
 #include "az_ulib_descriptor_api.h"
-#include "az_ulib_ipc_api.h"
+#include "az_ulib_ipc_interface.h"
 #include "az_ulib_result.h"
+#include "azure/az_core.h"
 #include "sprinkler_v1i1.h"
-#include "sprinkler_v1i1_interface.h"
 #include "sprinkler_1_model.h"
 
 #include <stddef.h>
@@ -123,16 +123,12 @@ static const az_ulib_interface_descriptor SPRINKLER_1_DESCRIPTOR = AZ_ULIB_DESCR
     SPRINKLER_1_CAPABILITY_SIZE,
     SPRINKLER_1_CAPABILITIES);
 
-az_result sprinkler_v1i1_interface_publish(void)
+az_result publish_interface(const az_ulib_ipc_vtable* const vtable)
 {
-  return az_ulib_ipc_publish(&SPRINKLER_1_DESCRIPTOR, NULL);
+  return vtable->publish(&SPRINKLER_1_DESCRIPTOR, NULL);
 }
 
-az_result sprinkler_v1i1_interface_unpublish(void)
+az_result unpublish_interface(const az_ulib_ipc_vtable* const vtable)
 {
-#ifdef AZ_ULIB_CONFIG_IPC_UNPUBLISH
-  return az_ulib_ipc_unpublish(&SPRINKLER_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
-#else
-  return AZ_OK;
-#endif // AZ_ULIB_CONFIG_IPC_UNPUBLISH
+  return vtable->unpublish(&SPRINKLER_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
 }

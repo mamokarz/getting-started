@@ -11,10 +11,7 @@
 #include "az_ulib_pal_os_api.h"
 #include "az_ulib_port.h"
 #include "azure/az_core.h"
-#include "cipher_v1i1.h"
-#include "cipher_v2i1.h"
 #include "dm_1_model.h"
-#include "sprinkler_v1i1.h"
 #include <azure/core/internal/az_precondition_internal.h>
 #include <string.h>
 
@@ -83,31 +80,6 @@ AZ_NODISCARD az_result az_ulib_dm_deinit(void)
   _az_dm_cb = NULL;
 
   return _az_ulib_dm_interface_unpublish();
-}
-
-static az_result install_built_in(az_span package_name)
-{
-  _az_PRECONDITION_NOT_NULL(_az_dm_cb);
-  az_result result;
-
-  if(az_span_is_content_equal(package_name, AZ_SPAN_FROM_STR("cipher_v1i1")))
-  {
-    result = cipher_v1i1_create();
-  }
-  else if(az_span_is_content_equal(package_name, AZ_SPAN_FROM_STR("cipher_v2i1")))
-  {
-    result = cipher_v2i1_create();
-  }
-  else if(az_span_is_content_equal(package_name, AZ_SPAN_FROM_STR("sprinkler_v1i1")))
-  {
-    result = sprinkler_v1i1_create();
-  }
-  else
-  {
-    result = AZ_ERROR_ITEM_NOT_FOUND;
-  }
-
-  return result;
 }
 
 static az_result install_in_memory(void* base_address, az_span package_name)
@@ -189,9 +161,6 @@ AZ_NODISCARD az_result az_ulib_dm_install(dm_1_source_type source_type, void* ba
       case DM_1_SOURCE_TYPE_CLI:
         result = install_from_cli(base_address, package_name);
         break;
-      case DM_1_SOURCE_TYPE_BUILT_IN:
-        result = install_built_in(package_name);
-        break;
       default:
         result = AZ_ERROR_UNEXPECTED_CHAR;
         break;
@@ -210,19 +179,7 @@ AZ_NODISCARD az_result az_ulib_dm_uninstall(az_span package_name)
 
   az_pal_os_lock_acquire(&(_az_dm_cb->_internal.lock));
   {
-    if(az_span_is_content_equal(package_name, AZ_SPAN_FROM_STR("cipher_v1i1")))
-    {
-      result = cipher_v1i1_destroy();
-    }
-    else if(az_span_is_content_equal(package_name, AZ_SPAN_FROM_STR("cipher_v2i1")))
-    {
-      result = cipher_v2i1_destroy();
-    }
-    else if(az_span_is_content_equal(package_name, AZ_SPAN_FROM_STR("sprinkler_v1i1")))
-    {
-      result = sprinkler_v1i1_destroy();
-    }
-    else if((package = get_package(package_name)) != NULL)
+    if((package = get_package(package_name)) != NULL)
     {
       uint32_t unpublish_position = *((uint32_t*)package->address + AZ_ULIB_DM_PACKAGE_UNPUBLISH);
       unpublish_interface unpublish = 
