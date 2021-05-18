@@ -106,7 +106,10 @@ AZ_NODISCARD az_result az_ulib_dm_deinit(void);
  *  @retval #AZ_ERROR_ULIB_ELEMENT_DUPLICATE    If the package is already installed.
  *  @retval #AZ_ERROR_NOT_ENOUGH_SPACE          If there is not enough space to handle the package.
  */
-AZ_NODISCARD az_result az_ulib_dm_install(dm_1_source_type source_type, void* address, az_span package_name);
+AZ_NODISCARD az_result az_ulib_dm_install(
+    dm_1_source_type source_type, 
+    void* address, 
+    az_span package_name);
 
 /**
  * @brief   Uninstall a package from the device.

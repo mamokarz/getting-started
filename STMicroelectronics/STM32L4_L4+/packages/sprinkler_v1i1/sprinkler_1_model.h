@@ -7,12 +7,11 @@
  * modified.
  ********************************************************************/
 
-#ifndef SPRINKLER_1_INTERFACE_H
-#define SPRINKLER_1_INTERFACE_H
+#ifndef SPRINKLER_1_MODULE_H
+#define SPRINKLER_1_MODULE_H
 
-#include "az_ulib_ipc_api.h"
+#include "az_ulib_capability_api.h"
 #include "az_ulib_result.h"
-#include "azure/az_core.h"
 
 #ifdef __cplusplus
 #include <cstdint>
@@ -56,4 +55,4 @@ extern "C"
 }
 #endif
 
-#endif /* SPRINKLER_1_INTERFACE_H */
+#endif /* SPRINKLER_1_MODULE_H */

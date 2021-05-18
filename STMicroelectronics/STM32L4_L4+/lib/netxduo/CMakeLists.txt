@@ -437,6 +437,7 @@ set(SOURCES
     ${CORE_LIB_DIR}/netxduo/addons/dns/nxd_dns.c
     ${CORE_LIB_DIR}/netxduo/addons/sntp/nxd_sntp_client.c
     ${CORE_LIB_DIR}/netxduo/addons/mqtt/nxd_mqtt_client.c
+    ${CORE_LIB_DIR}/netxduo/addons/web/nx_web_http_client.c
     ${CORE_LIB_DIR}/netxduo/addons/cloud/nx_cloud.c
 )
 
@@ -487,6 +488,7 @@ target_include_directories(${TARGET}
         ${CORE_LIB_DIR}/netxduo/addons/dns
         ${CORE_LIB_DIR}/netxduo/addons/mqtt
         ${CORE_LIB_DIR}/netxduo/addons/sntp
+        ${CORE_LIB_DIR}/netxduo/addons/web
 )
 
 target_link_libraries(${TARGET} 

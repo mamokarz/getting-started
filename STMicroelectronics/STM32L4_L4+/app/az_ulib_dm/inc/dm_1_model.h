@@ -33,8 +33,7 @@ typedef enum
 { 
   DM_1_SOURCE_TYPE_IN_MEMORY = 0, 
   DM_1_SOURCE_TYPE_BLOB = 1, 
-  DM_1_SOURCE_TYPE_CLI = 2,
-  DM_1_SOURCE_TYPE_BUILT_IN = 3
+  DM_1_SOURCE_TYPE_CLI = 2
 } dm_1_source_type;
 
 /*
