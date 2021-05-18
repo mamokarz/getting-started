@@ -84,12 +84,11 @@ AZ_NODISCARD az_result az_ulib_dm_deinit(void)
 
 static az_result install_in_memory(void* base_address, az_span package_name)
 {
-  _az_PRECONDITION_NOT_NULL(_az_dm_cb);
-
   AZ_ULIB_TRY
   {
     /* Is this a knowing package? */
-    AZ_ULIB_THROW_IF_ERROR((*(uint32_t*)base_address == 0x4D4F4455), AZ_ERROR_ULIB_INCOMPATIBLE_VERSION);
+    AZ_ULIB_THROW_IF_ERROR((*(uint32_t*)base_address == 0x4D4F4455), 
+                          AZ_ERROR_ULIB_INCOMPATIBLE_VERSION);
 
     /* Does the package already exist? */
     AZ_ULIB_THROW_IF_ERROR((get_package(package_name) == NULL), AZ_ERROR_ULIB_ELEMENT_DUPLICATE);
@@ -117,8 +116,6 @@ static az_result install_in_memory(void* base_address, az_span package_name)
 
 static az_result install_from_blob(void* base_address, az_span package_name)
 {
-  _az_PRECONDITION_NOT_NULL(_az_dm_cb);
-
   AZ_ULIB_TRY
   {
     AZ_ULIB_THROW_IF_AZ_ERROR(_az_ulib_dm_blob_download(base_address, package_name));
@@ -134,7 +131,6 @@ static az_result install_from_blob(void* base_address, az_span package_name)
 
 static az_result install_from_cli(void* base_address, az_span package_name)
 {
-  _az_PRECONDITION_NOT_NULL(_az_dm_cb);
   (void)base_address;
   (void)package_name;
 
@@ -143,7 +139,10 @@ static az_result install_from_cli(void* base_address, az_span package_name)
   return AZ_ERROR_NOT_IMPLEMENTED;
 }
 
-AZ_NODISCARD az_result az_ulib_dm_install(dm_1_source_type source_type, void* base_address, az_span package_name)
+AZ_NODISCARD az_result az_ulib_dm_install(
+    dm_1_source_type source_type, 
+    void* base_address, 
+    az_span package_name)
 {
   _az_PRECONDITION_NOT_NULL(_az_dm_cb);
   az_result result;
