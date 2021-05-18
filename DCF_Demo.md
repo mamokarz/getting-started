@@ -325,7 +325,7 @@ In the storage create a container for your packages:
   4. Type a name `packages`.
   6. Select `Create` to create the container.
 
-![AZ_BLOB_CREATE_CONTAINER](STMicroelectronics/STM32L4_L4+/media/azure_blob_create_container.PNG)
+![AZ_BLOB_CREATE_CONTAINER](STMicroelectronics/STM32L4_L4+/media/azure_blob_create_container.png)
 
 Upload your binary to the `packages` container
 
@@ -334,7 +334,7 @@ Upload your binary to the `packages` container
   3. In the left part of the Portal, find *sprinkler_v1i1.bin* in the directory ".\build\packages\sprinkler_v1i1".
   4. Select `Upload` to upload the file.
 
-![AZ_BLOB_UPLOAD_FILE](STMicroelectronics/STM32L4_L4+/media/azure_blob_upload_file.PNG)
+![AZ_BLOB_UPLOAD_FILE](STMicroelectronics/STM32L4_L4+/media/azure_blob_upload_file.png)
 
 Create the URL with SAS for the package.
 
@@ -344,11 +344,11 @@ Create the URL with SAS for the package.
   4. Change `Allowed protocols` to `HTTPS and HTTP`.
   5. Select `Generate SAS token and URL` to create the URL.
 
-![AZ_BLOB_GENERATE_SAS](STMicroelectronics/STM32L4_L4+/media/azure_blob_generate_sas.PNG)
+![AZ_BLOB_GENERATE_SAS](STMicroelectronics/STM32L4_L4+/media/azure_blob_generate_sas.png)
 
 Copy the `Blob SAS URL` to your clipboard.
 
-![AZ_BLOB_SAS_URL](STMicroelectronics/STM32L4_L4+/media/azure_blob_sas_url.PNG)
+![AZ_BLOB_SAS_URL](STMicroelectronics/STM32L4_L4+/media/azure_blob_sas_url.png)
 
 Install you package to a remote device running DCF using invoke-device-method:
 
