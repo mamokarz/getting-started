@@ -21,7 +21,7 @@ If properly configured, all debug tools applicable to a code built in the OS can
 
 The current example produces the key_vault_v1i1 and sprinkler_v1i1 packages. The CMake will create the key_vault_v1i1.elf and key_vault_v1i1.bin for key_vault_v1i1 package in ".\build\packages\key_vault_v1i1" directory, and sprinkler_v1i1.elf and sprinkler_v1i1.bin for sprinkler_v1i1 package in ".\build\packages\sprinkler_v1i1" directory. 
 
-For now, both packages was created to run in a specific memory address, key_vault_v1i1 shall be installed in the address 0x08050000, and sprinkler_v1i1 in the address 0x08057000.
+For now, both packages were created to run in a specific memory address, key_vault_v1i1 shall be installed in the address 0x08050000, and sprinkler_v1i1 in the address 0x08057000.
 
 ## Upload Binary to MCU Flash
 
@@ -356,7 +356,19 @@ Install you package to a remote device running DCF using invoke-device-method:
 <summary>Click here for Portal/bash commands</summary>
 <br>
 
-Query for existing interfaces on the device, if you have sprinkler.1 installed, uninstall it before try to install the new package from Blobs.
+If you have sprinkler.1 installed, uninstall it before trying to install the new package from Blobs.
+```
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.1.uninstall" --mp "{\"package_name\":\"sprinkler_v1i1\"}" 
+
+// expected outcome: Azure CLI
+{
+  "payload": {},
+  "status": 200
+}
+```
+
+Query for existing interfaces on the device to make sure that you don't have the sprinkler.1 interface anymore.
+
 ```
 az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc_query.1.query" --mp "{}"
 
@@ -414,7 +426,19 @@ The commands are different for Powershell because you have to use ` to escape an
 
 <br>
 
-Query for existing interfaces on the device, if you have sprinkler.1 installed, uninstall it before try to install the new package from Blobs.
+If you have sprinkler.1 installed, uninstall it before trying to install the new package from Blobs.
+```
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.1.uninstall" --mp "{\`"package_name\`":\`"sprinkler_v1i1\`"}" 
+
+// expected outcome: Azure CLI
+{
+  "payload": {},
+  "status": 200
+}
+```
+
+Query for existing interfaces on the device to make sure that you don't have the sprinkler.1 interface anymore.
+
 ```
 az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc_query.1.query" --mp "{}"
 
