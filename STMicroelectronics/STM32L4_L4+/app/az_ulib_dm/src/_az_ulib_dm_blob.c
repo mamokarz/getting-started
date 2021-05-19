@@ -214,8 +214,7 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
                                                     packet_ptr->nx_packet_length);
 
                 // calculate destination pointer
-                uint32_t total_downloaded_size = 0;
-                uint8_t* dest_ptr = (uint8_t*)(address) + total_downloaded_size;
+                uint8_t* dest_ptr = (uint8_t*)(address);
 
                 // grab package size and round up to nearest 2KB (0x0800)
                 uint32_t package_size = (uint32_t)http_client.nx_web_http_client_total_receive_bytes;
@@ -238,23 +237,23 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
                     {
                       // grab next chunk
                       nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
-                        if((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
+                      if((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
+                      {
+                        // increase destination pointer by size of last chunk
+                        dest_ptr += az_span_size(data);
+
+                        // save pointer to chunk
+                        data = az_span_create(packet_ptr->nx_packet_prepend_ptr, 
+                                                      packet_ptr->nx_packet_length);
+
+                        // call store to flash
+                        if((hal_status = internal_flash_write(
+                                              dest_ptr, az_span_ptr(data), az_span_size(data))) != HAL_OK)
                         {
-                          // increase destination pointer by size of last chunk
-                          dest_ptr += az_span_size(data);
-
-                          // save pointer to chunk
-                          data = az_span_create(packet_ptr->nx_packet_prepend_ptr, 
-                                                        packet_ptr->nx_packet_length);
-
-                          // call store to flash
-                          if((hal_status = internal_flash_write(
-                                                dest_ptr, az_span_ptr(data), az_span_size(data))) != HAL_OK)
-                          {
-                            nx_status = nx_packet_release(packet_ptr);
-                            break;
-                          }
+                          nx_status = nx_packet_release(packet_ptr);
+                          break;
                         }
+                      }
 
                       nx_status = nx_packet_release(packet_ptr);
                     }
