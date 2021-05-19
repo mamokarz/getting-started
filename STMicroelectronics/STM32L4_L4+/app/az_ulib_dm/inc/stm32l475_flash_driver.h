@@ -13,10 +13,10 @@ extern "C"
 #endif
 
 HAL_StatusTypeDef internal_flash_write(
-    unsigned char* destination_ptr, unsigned char* source_ptr, unsigned int size);
+    unsigned char* destination_ptr, unsigned char* source_ptr, uint32_t size);
     
 HAL_StatusTypeDef internal_flash_erase(
-    unsigned char* destination_ptr, unsigned int package_size);
+    unsigned char* destination_ptr, uint32_t package_size);
 
 #ifdef __cplusplus
 }

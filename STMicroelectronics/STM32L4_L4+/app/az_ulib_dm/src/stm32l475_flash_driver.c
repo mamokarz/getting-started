@@ -27,7 +27,7 @@ static int remainder_count;
 HAL_StatusTypeDef internal_flash_write(
     unsigned char* destination_ptr, 
     unsigned char* source_ptr, 
-    unsigned int size)
+    uint32_t size)
 {
 
 HAL_StatusTypeDef       status;
@@ -100,22 +100,22 @@ HAL_StatusTypeDef       status;
 }
 
 // Specific helper function for erasing flash for STM32L4, only erases the last page
-HAL_StatusTypeDef internal_flash_erase(unsigned char* destination_ptr, unsigned int size)
+HAL_StatusTypeDef internal_flash_erase(unsigned char* destination_ptr, uint32_t size)
 {
     // calculate the page where destination_ptr is at and erase
     uint32_t firstPage = 0;
     uint32_t numPages = (size + 2047) / 2048;
     uint32_t bank;
     
-    if ((unsigned int)destination_ptr <= FLASH_BANK1_END) 
+    if ((uint32_t)destination_ptr <= FLASH_BANK1_END) 
     {
         bank = FLASH_BANK_1;
-        firstPage = ((unsigned int)destination_ptr-FLASH_BASE)/2048;
+        firstPage = ((uint32_t)destination_ptr-FLASH_BASE)/2048;
     }
     else
     {
         bank = FLASH_BANK_2;
-        firstPage = ((unsigned int)destination_ptr-FLASH_BANK2_ADDR)/2048;
+        firstPage = ((uint32_t)destination_ptr-FLASH_BANK2_ADDR)/2048;
     }
 
 	// unlock flash
