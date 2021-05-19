@@ -16,9 +16,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define             USER_AGENT_NAME     "User-Agent: "
-#define             USER_AGENT_VALUE    "Azure RTOS Device (STM32)"
-#define             DCF_WAIT_TIME       600
+#define               USER_AGENT_NAME           "User-Agent: "
+#define               USER_AGENT_VALUE          "Azure RTOS Device (STM32)"
+#define               DCF_WAIT_TIME             600
 
 static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* slice)
 {
@@ -168,6 +168,7 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
   UINT nx_status;
   HAL_StatusTypeDef hal_status;
 
+
   if((nx_status = nx_web_http_client_create(&http_client, "HTTP Client", 
                               &nx_ip, &nx_pool, 1536)) == NX_SUCCESS)
   {
@@ -176,62 +177,103 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
     {
       // prepare flash by erasing pages
       // TODO: Replace package_size with actual package size fetched from blob
-      unsigned int package_size =  0x00007000; // for the first package
-      if ((hal_status = internal_flash_erase((UCHAR*)address, package_size)) == HAL_OK)
+      // unsigned int package_size =  0x00007000; // for the first package
+      // grab package
+      /* Set the header callback routine. */
+      if((nx_status = nx_web_http_client_request_initialize(&http_client,
+                                NX_WEB_HTTP_METHOD_GET, /* GET, PUT, DELETE, POST, HEAD */
+                                resource, /* "resource" (usually includes auth headers)*/
+                                host, /* "host" */
+                                0, /* Used by PUT and POST */
+                                NX_FALSE, /* If true, input_size is ignored. */
+                                NX_NULL, /* "name" */
+                                NX_NULL, /* "password" */
+                                DCF_WAIT_TIME)) == NX_SUCCESS)
       {
-        if((nx_status = nx_web_http_client_request_initialize(&http_client,
-                                  NX_WEB_HTTP_METHOD_GET, /* GET, PUT, DELETE, POST, HEAD */
-                                  resource, /* "resource" (usually includes auth headers)*/
-                                  host, /* "host" */
-                                  0, /* Used by PUT and POST */
-                                  NX_FALSE, /* If true, input_size is ignored. */
-                                  NX_NULL, /* "name" */
-                                  NX_NULL, /* "password" */
+        if((nx_status = nx_web_http_client_request_header_add(&http_client, 
+                                  USER_AGENT_NAME, 
+                                  sizeof(USER_AGENT_NAME) - 1, 
+                                  USER_AGENT_VALUE, 
+                                  sizeof(USER_AGENT_VALUE) - 1, 
                                   DCF_WAIT_TIME)) == NX_SUCCESS)
         {
-          if((nx_status = nx_web_http_client_request_header_add(&http_client, 
-                                    USER_AGENT_NAME, 
-                                    sizeof(USER_AGENT_NAME) - 1, 
-                                    USER_AGENT_VALUE, 
-                                    sizeof(USER_AGENT_VALUE) - 1, 
-                                    DCF_WAIT_TIME)) == NX_SUCCESS)
-          {
-            nx_status = nx_web_http_client_request_send(&http_client, DCF_WAIT_TIME);
-            // Download destination pointer, increase after every packet is stored
-            uint32_t total_downloaded_size = 0;
-            while(nx_status == NX_SUCCESS)
+          if((nx_status = nx_web_http_client_request_send(&http_client, 
+                                                          DCF_WAIT_TIME)) == NX_SUCCESS)
             {
+              // grab first chunk
               nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
-              if((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
+
+              // save pointer to first chunk
+              // Download destination pointer, increase after every packet is stored
+              uint32_t total_downloaded_size = 0;
+              az_span data = az_span_create(packet_ptr->nx_packet_prepend_ptr, 
+                                                  packet_ptr->nx_packet_length);
+
+              // calculate destination pointer
+              uint8_t* dest_ptr = (uint8_t*)(address) + total_downloaded_size;
+
+              // debug
+              printf("length = %u\r\n", (unsigned int)http_client.nx_web_http_client_total_receive_bytes);
+
+              unsigned int package_size = (unsigned int)http_client.nx_web_http_client_total_receive_bytes;
+              package_size += 0x0800 - package_size % 0x0800;
+              printf("package_size = %u\r\n", package_size);
+              if ((hal_status = internal_flash_erase((UCHAR*)address, package_size)) == HAL_OK)
               {
-                az_span data = az_span_create(packet_ptr->nx_packet_prepend_ptr, 
-                                              packet_ptr->nx_packet_length);
-
-                // calculate destination pointer
-                uint8_t* dest_ptr = (uint8_t*)(address) + total_downloaded_size;
-
-                // call store to flash
-                if((hal_status = internal_flash_write(
-                                      dest_ptr, az_span_ptr(data), az_span_size(data))) != HAL_OK)
+                if((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
                 {
-                  nx_status = nx_packet_release(packet_ptr);
-                  break;
+                  // store first chunk
+                  if((hal_status = internal_flash_write(
+                                        dest_ptr, az_span_ptr(data), az_span_size(data))) != HAL_OK)
+                  {
+                    nx_status = nx_packet_release(packet_ptr);
+                  }
+                  else
+                  {
+                    // update total package size
+                    total_downloaded_size += az_span_size(data);
+
+                    nx_status = nx_packet_release(packet_ptr);
+                  }
                 }
 
-                // update total package size
-                total_downloaded_size += az_span_size(data);
+                // if there are more chunks to store, loop over them until done
+                while(nx_status == NX_SUCCESS)
+                {
+                  nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
+                  if((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
+                  {
+                    data = az_span_create(packet_ptr->nx_packet_prepend_ptr, 
+                                                  packet_ptr->nx_packet_length);
 
-                nx_status = nx_packet_release(packet_ptr);
+                    // calculate destination pointer
+                    dest_ptr = (uint8_t*)(address) + total_downloaded_size;
+
+                    // call store to flash
+                    if((hal_status = internal_flash_write(
+                                          dest_ptr, az_span_ptr(data), az_span_size(data))) != HAL_OK)
+                    {
+                      nx_status = nx_packet_release(packet_ptr);
+                      break;
+                    }
+
+                    // update total package size
+                    total_downloaded_size += az_span_size(data);
+
+                    nx_status = nx_packet_release(packet_ptr);
+                  }
+                } 
+                
+                if(nx_status == NX_WEB_HTTP_GET_DONE)
+                {
+                  nx_status = NX_SUCCESS;
+                }            
               }
-            } 
-            
-            if(nx_status == NX_WEB_HTTP_GET_DONE)
-            {
-              nx_status = NX_SUCCESS;
-            }            
-          }
+            }        
         }
       }
+        
+      
     }
     nx_status = nx_web_http_client_delete(&http_client);
   }
