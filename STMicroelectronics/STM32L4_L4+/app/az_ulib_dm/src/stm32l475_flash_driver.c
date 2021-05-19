@@ -132,7 +132,7 @@ HAL_StatusTypeDef internal_flash_erase(unsigned char* destination_ptr, unsigned 
 	HAL_FLASH_Lock();		
 
     // set internal variable
-    total_write_size = 0x00007000;
+    total_write_size = size;
     remainder_count = -1;
     write_size = 0;
 	
