@@ -168,18 +168,15 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
   UINT nx_status;
   HAL_StatusTypeDef hal_status;
 
-
+  // create http blob client
   if((nx_status = nx_web_http_client_create(&http_client, "HTTP Client", 
                               &nx_ip, &nx_pool, 1536)) == NX_SUCCESS)
   {
+    // connect to server
     if((nx_status = nx_web_http_client_connect(&http_client, ip, 
                               NX_WEB_HTTP_SERVER_PORT, DCF_WAIT_TIME)) == NX_SUCCESS)
     {
-      // prepare flash by erasing pages
-      // TODO: Replace package_size with actual package size fetched from blob
-      // unsigned int package_size =  0x00007000; // for the first package
-      // grab package
-      /* Set the header callback routine. */
+      // initialize get request
       if((nx_status = nx_web_http_client_request_initialize(&http_client,
                                 NX_WEB_HTTP_METHOD_GET, /* GET, PUT, DELETE, POST, HEAD */
                                 resource, /* "resource" (usually includes auth headers)*/
@@ -190,6 +187,7 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
                                 NX_NULL, /* "password" */
                                 DCF_WAIT_TIME)) == NX_SUCCESS)
       {
+        // add user agent
         if((nx_status = nx_web_http_client_request_header_add(&http_client, 
                                   USER_AGENT_NAME, 
                                   sizeof(USER_AGENT_NAME) - 1, 
@@ -197,6 +195,7 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
                                   sizeof(USER_AGENT_VALUE) - 1, 
                                   DCF_WAIT_TIME)) == NX_SUCCESS)
         {
+          // send request
           if((nx_status = nx_web_http_client_request_send(&http_client, 
                                                           DCF_WAIT_TIME)) == NX_SUCCESS)
             {
@@ -204,25 +203,23 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
               nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
 
               // save pointer to first chunk
-              // Download destination pointer, increase after every packet is stored
-              uint32_t total_downloaded_size = 0;
               az_span data = az_span_create(packet_ptr->nx_packet_prepend_ptr, 
                                                   packet_ptr->nx_packet_length);
 
               // calculate destination pointer
+              uint32_t total_downloaded_size = 0;
               uint8_t* dest_ptr = (uint8_t*)(address) + total_downloaded_size;
 
-              // debug
-              printf("length = %u\r\n", (unsigned int)http_client.nx_web_http_client_total_receive_bytes);
-
+              // grab package size and round up to nearest 2KB (0x0800)
               unsigned int package_size = (unsigned int)http_client.nx_web_http_client_total_receive_bytes;
               package_size += 0x0800 - package_size % 0x0800;
-              printf("package_size = %u\r\n", package_size);
+
+              // erase flash
               if ((hal_status = internal_flash_erase((UCHAR*)address, package_size)) == HAL_OK)
               {
                 if((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
                 {
-                  // store first chunk
+                  // write first chunk to flash
                   if((hal_status = internal_flash_write(
                                         dest_ptr, az_span_ptr(data), az_span_size(data))) != HAL_OK)
                   {
@@ -240,13 +237,15 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
                 // if there are more chunks to store, loop over them until done
                 while(nx_status == NX_SUCCESS)
                 {
+                  // grab next chunk
                   nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
                   if((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
                   {
+                    // save pointer to chunk
                     data = az_span_create(packet_ptr->nx_packet_prepend_ptr, 
                                                   packet_ptr->nx_packet_length);
 
-                    // calculate destination pointer
+                    // increase destination pointer by size of last chunk
                     dest_ptr = (uint8_t*)(address) + total_downloaded_size;
 
                     // call store to flash
@@ -257,7 +256,7 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
                       break;
                     }
 
-                    // update total package size
+                    // update total download size
                     total_downloaded_size += az_span_size(data);
 
                     nx_status = nx_packet_release(packet_ptr);
