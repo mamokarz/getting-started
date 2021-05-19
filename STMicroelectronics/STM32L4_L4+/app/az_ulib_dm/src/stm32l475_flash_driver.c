@@ -24,7 +24,10 @@ static union
 static int remainder_count;
 
 /* Write firmware into internal flash.  */
-HAL_StatusTypeDef internal_flash_write(unsigned char* destination_ptr, unsigned char* source_ptr, unsigned int size)
+HAL_StatusTypeDef internal_flash_write(
+    unsigned char* destination_ptr, 
+    unsigned char* source_ptr, 
+    unsigned int size)
 {
 
 HAL_StatusTypeDef       status;
@@ -39,11 +42,13 @@ HAL_StatusTypeDef       status;
     
     HAL_FLASH_Unlock();
     
-    // definitely will be 8 but destination pointer has been increased by 8 for unknown reason and now we are taking it off
+    // definitely will be 8 but destination pointer has been increased by 8 for unknown reason and 
+    // now we are taking it off. 
     // write the first write buffer int64 into flash
     if (remainder_count == 8)
     {
-        status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t)(destination_ptr - 8), write_buffer.write_buffer_int64); 
+        status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, 
+                                (uint32_t)(destination_ptr - 8), write_buffer.write_buffer_int64); 
         if (status != HAL_OK)
         {
             HAL_FLASH_Lock();
@@ -54,7 +59,10 @@ HAL_StatusTypeDef       status;
 
     for (; size > 8; size -= 8, destination_ptr += 8, source_ptr += 8)
     {
-        status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t)(destination_ptr), (uint64_t)*(uint32_t*)source_ptr | ((uint64_t)*(uint32_t*)(source_ptr + 4)) << 32); 
+        status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, 
+                                (uint32_t)(destination_ptr), 
+                                (uint64_t)*(uint32_t*)source_ptr | 
+                                    ((uint64_t)*(uint32_t*)(source_ptr + 4)) << 32); 
         if (status != HAL_OK)
         {
             HAL_FLASH_Lock();
@@ -78,7 +86,9 @@ HAL_StatusTypeDef       status;
             destination_ptr++;
         }
 
-        status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t)(destination_ptr - 8), write_buffer.write_buffer_int64); 
+        status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, 
+                                (uint32_t)(destination_ptr - 8), 
+                                write_buffer.write_buffer_int64); 
         if (status != HAL_OK)
         {
             HAL_FLASH_Lock();
