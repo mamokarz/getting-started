@@ -6,3 +6,4 @@ AlignConsecutiveMacros: true
 AlignConsecutiveAssignments: true
 IndentCaseLabels: true
 PointerAlignment: Left
+IndentWidth: 2
