@@ -261,11 +261,11 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
                     }
                   }
                 }
+              }
 
-                if (nx_status == NX_WEB_HTTP_GET_DONE)
-                {
-                  nx_status = NX_SUCCESS;
-                }
+              if (nx_status == NX_WEB_HTTP_GET_DONE)
+              {
+                nx_status = NX_SUCCESS;
               }
 
               nx_status = nx_packet_release(packet_ptr);
