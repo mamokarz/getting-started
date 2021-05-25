@@ -46,7 +46,7 @@ Clone the following repo to download all sample device code, setup scripts, and 
 To clone the repo, run the following command:
 
 ```shell
-git clone --recursive https://github.com/azure-rtos/getting-started.git
+git clone --recursive https://github.com/mamokarz/getting-started.git
 ```
 
 ### Install the tools
