@@ -158,7 +158,7 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
         az_ulib_capability_index command_index;
         AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ipc_try_get_capability(handle, method_span, &command_index));
 
-        AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ipc_call_w_str(handle, command_index, payload_span, &http_response));
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ipc_call_with_str(handle, command_index, payload_span, &http_response));
 
         http_status = 200;
     }
@@ -167,6 +167,10 @@ static void direct_method_cb(AZURE_IOT_NX_CONTEXT* nx_context,
         const char* error_str;
         switch(AZ_ULIB_TRY_RESULT)
         {
+            case AZ_ULIB_EOF:
+                http_status = 416;
+                error_str = "AZ_ULIB_EOF";
+            break;
             case AZ_ERROR_ULIB_ELEMENT_DUPLICATE:
                 http_status = 409;
                 error_str = "AZ_ERROR_ULIB_ELEMENT_DUPLICATE";
