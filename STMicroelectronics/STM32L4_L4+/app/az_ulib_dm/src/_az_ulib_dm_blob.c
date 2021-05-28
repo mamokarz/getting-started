@@ -175,6 +175,82 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status)
   }
 }
 
+static UINT blob_client_init(NXD_ADDRESS* ip, NX_WEB_HTTP_CLIENT* http_client, NX_PACKET* packet_ptr,
+                                  CHAR* resource, CHAR* host)
+{
+  UINT nx_status; 
+
+  // create http blob client
+  if ((nx_status = nx_web_http_client_create(http_client, "HTTP Client", &nx_ip, &nx_pool, 1536)) != NX_SUCCESS)
+  {
+    printf("HTTP Client Create failed with nx_status = (%0x02)\r\n", nx_status);
+  }
+
+  // connect to server
+  else if ((nx_status = nx_web_http_client_connect(http_client, ip, NX_WEB_HTTP_SERVER_PORT, DCF_WAIT_TIME)) !=
+      NX_SUCCESS)
+  {
+    printf("HTTP Client Connect failed with nx_status = (%0x02)\r\n", nx_status);
+  }
+
+  // initialize get request
+  else if ((nx_status = nx_web_http_client_request_initialize(http_client,
+          NX_WEB_HTTP_METHOD_GET, /* GET, PUT, DELETE, POST, HEAD */
+          resource,               /* "resource" (usually includes auth headers)*/
+          host,                   /* "host" */
+          0,                      /* Used by PUT and POST */
+          NX_FALSE,               /* If true, input_size is ignored. */
+          NX_NULL,                /* "name" */
+          NX_NULL,                /* "password" */
+          DCF_WAIT_TIME)) != NX_SUCCESS)
+  {
+    printf("HTTP Client Request Initialize failed with nx_status = (%0x02)\r\n", nx_status);
+  }
+
+  // add user agent
+  else if ((nx_status = nx_web_http_client_request_header_add(http_client,
+            USER_AGENT_NAME,
+            sizeof(USER_AGENT_NAME) - 1,
+            USER_AGENT_VALUE,
+            sizeof(USER_AGENT_VALUE) - 1,
+            DCF_WAIT_TIME)) != NX_SUCCESS)
+  {
+    printf("HTTP Client Request Header Add failed with nx_status = (%0x02)\r\n", nx_status);
+  }
+
+  return nx_status;
+}
+
+static az_result blob_client_grab_chunk(NX_WEB_HTTP_CLIENT* http_client_ptr, NX_PACKET** packet_ptr_ref, uint8_t* done)
+{
+  UINT nx_status; 
+
+  // release packet_ptr from last nx_web_htt_client_response_body_get()
+  nx_packet_release(*packet_ptr_ref);
+
+  // grab next chunk
+  nx_status = nx_web_http_client_response_body_get(http_client_ptr, packet_ptr_ref, 500);
+  
+  // done processing response body
+  if (nx_status == NX_WEB_HTTP_GET_DONE)
+  {
+    *done = 1;
+    return AZ_OK;
+  }
+  // there was an error
+  else if (nx_status != NX_SUCCESS)
+  {
+    *done = 1;
+    return result_from_nx_status(nx_status);
+  }
+  // successfully grabbed chunk and there is more to grab
+  else
+  {
+    *done = 0;
+    return AZ_OK;
+  }
+}
+
 static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host, void* address)
 {
   (void)address;
@@ -183,95 +259,60 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
   NX_PACKET* packet_ptr = NULL;
   UINT nx_status;
   HAL_StatusTypeDef hal_status;
+  uint8_t download_complete = 0;
+  az_result result;
 
-  // create http blob client
-  if ((nx_status = nx_web_http_client_create(&http_client, "HTTP Client", &nx_ip, &nx_pool, 1536)) == NX_SUCCESS)
+  if((nx_status = blob_client_init(ip, &http_client, packet_ptr, resource, host)) == NX_SUCCESS)
   {
-    // connect to server
-    if ((nx_status = nx_web_http_client_connect(&http_client, ip, NX_WEB_HTTP_SERVER_PORT, DCF_WAIT_TIME)) ==
-        NX_SUCCESS)
+    // send request
+    if ((nx_status = nx_web_http_client_request_send(&http_client, DCF_WAIT_TIME)) == NX_SUCCESS)
     {
-      // initialize get request
-      if ((nx_status = nx_web_http_client_request_initialize(&http_client,
-               NX_WEB_HTTP_METHOD_GET, /* GET, PUT, DELETE, POST, HEAD */
-               resource,               /* "resource" (usually includes auth headers)*/
-               host,                   /* "host" */
-               0,                      /* Used by PUT and POST */
-               NX_FALSE,               /* If true, input_size is ignored. */
-               NX_NULL,                /* "name" */
-               NX_NULL,                /* "password" */
-               DCF_WAIT_TIME)) == NX_SUCCESS)
+      // grab first chunk
+      if ((result = blob_client_grab_chunk(&http_client, &packet_ptr, &download_complete)) == AZ_OK)
       {
-        // add user agent
-        if ((nx_status = nx_web_http_client_request_header_add(&http_client,
-                 USER_AGENT_NAME,
-                 sizeof(USER_AGENT_NAME) - 1,
-                 USER_AGENT_VALUE,
-                 sizeof(USER_AGENT_VALUE) - 1,
-                 DCF_WAIT_TIME)) == NX_SUCCESS)
+        // save pointer to first chunk
+        az_span data = az_span_create(packet_ptr->nx_packet_prepend_ptr, packet_ptr->nx_packet_length);
+
+        // calculate destination pointer
+        uint8_t* dest_ptr = (uint8_t*)(address);
+
+        // grab package size and round up to nearest 2KB (0x0800)
+        uint32_t package_size = (uint32_t)http_client.nx_web_http_client_total_receive_bytes;
+        if ((package_size & 0x07FF) != 0x000)
         {
-          // send request
-          if ((nx_status = nx_web_http_client_request_send(&http_client, DCF_WAIT_TIME)) == NX_SUCCESS)
+          package_size = (package_size & 0xFFFFF800) + 0x0800;
+        }
+
+        // erase flash
+        if ((hal_status = internal_flash_erase((UCHAR*)address, package_size)) == HAL_OK)
+        {
+          // write first chunk to flash
+          if ((hal_status = internal_flash_write(dest_ptr, az_span_ptr(data), az_span_size(data))) == HAL_OK)
           {
-            // grab first chunk
-            nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
-            if ((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
+            // if there are more chunks to store, loop over them until done
+            while (!download_complete)
             {
-              // save pointer to first chunk
-              az_span data = az_span_create(packet_ptr->nx_packet_prepend_ptr, packet_ptr->nx_packet_length);
-
-              // calculate destination pointer
-              uint8_t* dest_ptr = (uint8_t*)(address);
-
-              // grab package size and round up to nearest 2KB (0x0800)
-              uint32_t package_size = (uint32_t)http_client.nx_web_http_client_total_receive_bytes;
-              if ((package_size & 0x07FF) != 0x000)
+              // grab next chunk
+              if ((result = blob_client_grab_chunk(&http_client, &packet_ptr, &download_complete)) == AZ_OK)
               {
-                package_size = (package_size & 0xFFFFF800) + 0x0800;
-              }
+                // increase destination pointer by size of last chunk
+                dest_ptr += az_span_size(data);
 
-              // erase flash
-              if ((hal_status = internal_flash_erase((UCHAR*)address, package_size)) == HAL_OK)
-              {
-                // write first chunk to flash
-                if ((hal_status = internal_flash_write(dest_ptr, az_span_ptr(data), az_span_size(data))) == HAL_OK)
+                // save pointer to chunk
+                data = az_span_create(packet_ptr->nx_packet_prepend_ptr, packet_ptr->nx_packet_length);
+                
+                // call store to flash
+                if ((hal_status = internal_flash_write(dest_ptr, az_span_ptr(data), az_span_size(data))) !=
+                    HAL_OK)
                 {
-                  // if there are more chunks to store, loop over them until done
-                  while (nx_status == NX_SUCCESS)
-                  {
-                    // release packet_ptr from last nx_web_htt_client_response_body_get()
-                    nx_status = nx_packet_release(packet_ptr);
-
-                    // grab next chunk
-                    nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
-                    if ((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
-                    {
-                      // increase destination pointer by size of last chunk
-                      dest_ptr += az_span_size(data);
-
-                      // save pointer to chunk
-                      data = az_span_create(packet_ptr->nx_packet_prepend_ptr, packet_ptr->nx_packet_length);
-
-                      // call store to flash
-                      if ((hal_status = internal_flash_write(dest_ptr, az_span_ptr(data), az_span_size(data))) !=
-                          HAL_OK)
-                      {
-                        break;
-                      }
-                    }
-                  }
+                  break;
                 }
               }
-
-              if (nx_status == NX_WEB_HTTP_GET_DONE)
-              {
-                nx_status = NX_SUCCESS;
-              }
-
-              nx_status = nx_packet_release(packet_ptr);
             }
           }
         }
+
+        nx_packet_release(packet_ptr);
       }
     }
 
@@ -286,7 +327,7 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
   {
     return result_from_hal_status(hal_status);
   }
-  return AZ_OK;
+  return result;
 }
 
 AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
