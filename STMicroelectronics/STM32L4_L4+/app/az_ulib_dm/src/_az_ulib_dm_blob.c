@@ -251,6 +251,32 @@ static az_result blob_client_grab_chunk(NX_WEB_HTTP_CLIENT* http_client_ptr, NX_
   }
 }
 
+static az_result blob_client_request_send(NX_WEB_HTTP_CLIENT* http_client_ptr, ULONG wait_option)
+{
+  UINT nx_status;
+  
+  if ((nx_status = nx_web_http_client_request_send(http_client_ptr, wait_option)) != NX_SUCCESS)
+  {
+    printf("HTTP Client request send fail with nx_status = (%0x02)\r\n", nx_status);
+    return result_from_nx_status(nx_status);
+  }
+
+  return AZ_OK;
+}
+
+static az_result blob_client_delete(NX_WEB_HTTP_CLIENT* http_client_ptr)
+{
+  UINT nx_status;
+
+  if ((nx_status = nx_web_http_client_delete(http_client_ptr)) != NX_SUCCESS)
+  {
+    printf("HTTP Client request send fail with nx_status = (%0x02)\r\n", nx_status);
+    return result_from_nx_status(nx_status);
+  }
+
+  return AZ_OK;
+}
+
 static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host, void* address)
 {
   (void)address;
@@ -265,7 +291,7 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
   if((nx_status = blob_client_init(ip, &http_client, packet_ptr, resource, host)) == NX_SUCCESS)
   {
     // send request
-    if ((nx_status = nx_web_http_client_request_send(&http_client, DCF_WAIT_TIME)) == NX_SUCCESS)
+    if ((result = blob_client_request_send(&http_client, DCF_WAIT_TIME)) == AZ_OK)
     {
       // grab first chunk
       if ((result = blob_client_grab_chunk(&http_client, &packet_ptr, &download_complete)) == AZ_OK)
@@ -316,13 +342,9 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
       }
     }
 
-    nx_status = nx_web_http_client_delete(&http_client);
+    result = blob_client_delete(&http_client);
   }
 
-  if (nx_status != NX_SUCCESS)
-  {
-    return result_from_nx_status(nx_status);
-  }
   if (hal_status != HAL_OK)
   {
     return result_from_hal_status(hal_status);
