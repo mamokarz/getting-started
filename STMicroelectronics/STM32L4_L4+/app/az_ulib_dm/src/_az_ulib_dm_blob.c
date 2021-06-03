@@ -5,20 +5,40 @@
 #include "_az_ulib_dm_blob.h"
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
-#include "nx_api.h"
-#include "nx_web_http_client.h"
-#include "nx_wifi.h"
-#include "nxd_dns.h"
 #include "stm32l475_flash_driver.h"
-#include "stm_networking.h"
-#include "wifi.h"
-
+#include "_az_ulib_dm_blob_ustream_interface.h"
+#include "az_ulib_ustream.h"
 #include <stdbool.h>
 #include <stdint.h>
 
-#define USER_AGENT_NAME  "User-Agent: "
-#define USER_AGENT_VALUE "Azure RTOS Device (STM32)"
-#define DCF_WAIT_TIME    600
+#define USER_BUFFER_SIZE 5
+#define SPLIT_POSITION 12
+
+static const char USTREAM_ONE_STRING[] = "Split BeforeSplit After";
+
+static az_result print_ustream(az_ulib_ustream* ustream)
+{
+  az_result result;
+  size_t returned_size;
+  uint8_t user_buf[USER_BUFFER_SIZE] = { 0 };
+
+  // Read ustream until receive AZIOT_ULIB_EOF
+  (void)printf("\r\n------printing the ustream------\r\n");
+  while ((result = az_ulib_ustream_read(ustream, user_buf, USER_BUFFER_SIZE - 1, &returned_size))
+         == AZ_OK)
+  {
+    user_buf[returned_size] = '\0';
+    (void)printf("%s", user_buf);
+  }
+  (void)printf("\r\n-----------end of ustream------------\r\n\r\n");
+
+  // Change return to AZ_OK if last returned value was AZ_ULIB_EOF
+  if (result == AZ_ULIB_EOF)
+  {
+    result = AZ_OK;
+  }
+  return result;
+}
 
 static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* slice)
 {
@@ -130,34 +150,6 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_get_size(az_span url, int32_t* size)
   return AZ_ERROR_NOT_IMPLEMENTED;
 }
 
-static az_result result_from_nx_status(UINT nx_status)
-{
-  switch (nx_status)
-  {
-    case NX_SUCCESS:
-      return AZ_OK;
-    case NX_WEB_HTTP_POOL_ERROR:
-      return AZ_ERROR_NOT_ENOUGH_SPACE;
-    case NX_NO_PACKET:
-      return AZ_ERROR_NOT_ENOUGH_SPACE;
-    case NX_INVALID_PARAMETERS:
-      return AZ_ERROR_NOT_SUPPORTED;
-    case NX_OPTION_ERROR:
-      return AZ_ERROR_ARG;
-    case NX_PTR_ERROR:
-      return AZ_ERROR_ARG;
-    case NX_CALLER_ERROR:
-      return AZ_ERROR_ARG;
-    case NX_WEB_HTTP_NOT_READY:
-      return AZ_ERROR_ULIB_BUSY;
-    case NX_WAIT_ABORTED:
-      return AZ_ERROR_ULIB_SYSTEM; // should be AZ_ERROR_ULIB_TIME_OUT
-                                   // or AZ_ERROR_ULIB_ABORTED
-    default:
-      return AZ_ERROR_ULIB_SYSTEM;
-  }
-}
-
 static az_result result_from_hal_status(HAL_StatusTypeDef status)
 {
   switch (status)
@@ -175,106 +167,74 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status)
   }
 }
 
-static UINT blob_client_init(NXD_ADDRESS* ip, NX_WEB_HTTP_CLIENT* http_client, NX_PACKET* packet_ptr,
-                                  CHAR* resource, CHAR* host)
+static az_result try_ustream()
 {
-  UINT nx_status; 
+  az_result result;
 
-  // create http blob client
-  if ((nx_status = nx_web_http_client_create(http_client, "HTTP Client", &nx_ip, &nx_pool, 1536)) != NX_SUCCESS)
+  az_ulib_ustream_data_cb* data_cb;
+  if ((data_cb = (az_ulib_ustream_data_cb*)malloc(sizeof(az_ulib_ustream_data_cb))) != NULL)
   {
-    printf("HTTP Client Create failed with nx_status = (%0x02)\r\n", nx_status);
+    az_ulib_ustream ustream_instance;
+    if ((result = az_ulib_ustream_init(
+             &ustream_instance,
+             data_cb,
+             free,
+             (const uint8_t*)USTREAM_ONE_STRING,
+             sizeof(USTREAM_ONE_STRING),
+             NULL))
+        != AZ_OK)
+    {
+      printf("Could not initialize ustream_instance\r\n");
+    }
+    else if ((result = print_ustream(&ustream_instance)) != AZ_OK)
+    {
+      az_ulib_ustream_dispose(&ustream_instance);
+      printf("Could not print the original ustream_instance\r\n");
+    }
+    else if ((result = az_ulib_ustream_reset(&ustream_instance)) != AZ_OK)
+    {
+      az_ulib_ustream_dispose(&ustream_instance);
+      printf("Could not reset ustream_instance\r\n");
+    }
+    else
+    {
+      az_ulib_ustream ustream_instance_split;
+
+      if ((result
+           = az_ulib_ustream_split(&ustream_instance, &ustream_instance_split, SPLIT_POSITION))
+          != AZ_OK)
+      {
+        printf("Could not split ustream_instance\r\n");
+      }
+      else
+      {
+        if ((result = print_ustream(&ustream_instance)) != AZ_OK)
+        {
+          printf("Could not print the split ustream_instance\r\n");
+        }
+        else if ((result = print_ustream(&ustream_instance_split)) != AZ_OK)
+        {
+          printf("Could not print ustream_instance_split\r\n");
+        }
+
+        if ((result = az_ulib_ustream_dispose(&ustream_instance_split)) != AZ_OK)
+        {
+          printf("Could not dispose of ustream_instance_split\r\n");
+        }
+      }
+
+      if ((result = az_ulib_ustream_dispose(&ustream_instance)) != AZ_OK)
+      {
+        printf("Could not dispose of ustream_instance\r\n");
+      }
+    }
   }
-
-  // connect to server
-  else if ((nx_status = nx_web_http_client_connect(http_client, ip, NX_WEB_HTTP_SERVER_PORT, DCF_WAIT_TIME)) !=
-      NX_SUCCESS)
-  {
-    printf("HTTP Client Connect failed with nx_status = (%0x02)\r\n", nx_status);
-  }
-
-  // initialize get request
-  else if ((nx_status = nx_web_http_client_request_initialize(http_client,
-          NX_WEB_HTTP_METHOD_GET, /* GET, PUT, DELETE, POST, HEAD */
-          resource,               /* "resource" (usually includes auth headers)*/
-          host,                   /* "host" */
-          0,                      /* Used by PUT and POST */
-          NX_FALSE,               /* If true, input_size is ignored. */
-          NX_NULL,                /* "name" */
-          NX_NULL,                /* "password" */
-          DCF_WAIT_TIME)) != NX_SUCCESS)
-  {
-    printf("HTTP Client Request Initialize failed with nx_status = (%0x02)\r\n", nx_status);
-  }
-
-  // add user agent
-  else if ((nx_status = nx_web_http_client_request_header_add(http_client,
-            USER_AGENT_NAME,
-            sizeof(USER_AGENT_NAME) - 1,
-            USER_AGENT_VALUE,
-            sizeof(USER_AGENT_VALUE) - 1,
-            DCF_WAIT_TIME)) != NX_SUCCESS)
-  {
-    printf("HTTP Client Request Header Add failed with nx_status = (%0x02)\r\n", nx_status);
-  }
-
-  return nx_status;
-}
-
-static az_result blob_client_grab_chunk(NX_WEB_HTTP_CLIENT* http_client_ptr, NX_PACKET** packet_ptr_ref, uint8_t* done)
-{
-  UINT nx_status; 
-
-  // release packet_ptr from last nx_web_htt_client_response_body_get()
-  nx_packet_release(*packet_ptr_ref);
-
-  // grab next chunk
-  nx_status = nx_web_http_client_response_body_get(http_client_ptr, packet_ptr_ref, 500);
-  
-  // done processing response body
-  if (nx_status == NX_WEB_HTTP_GET_DONE)
-  {
-    *done = 1;
-    return AZ_OK;
-  }
-  // there was an error
-  else if (nx_status != NX_SUCCESS)
-  {
-    *done = 1;
-    return result_from_nx_status(nx_status);
-  }
-  // successfully grabbed chunk and there is more to grab
   else
   {
-    *done = 0;
-    return AZ_OK;
-  }
-}
-
-static az_result blob_client_request_send(NX_WEB_HTTP_CLIENT* http_client_ptr, ULONG wait_option)
-{
-  UINT nx_status;
-  
-  if ((nx_status = nx_web_http_client_request_send(http_client_ptr, wait_option)) != NX_SUCCESS)
-  {
-    printf("HTTP Client request send fail with nx_status = (%0x02)\r\n", nx_status);
-    return result_from_nx_status(nx_status);
+    result = AZ_ERROR_OUT_OF_MEMORY;
   }
 
-  return AZ_OK;
-}
-
-static az_result blob_client_delete(NX_WEB_HTTP_CLIENT* http_client_ptr)
-{
-  UINT nx_status;
-
-  if ((nx_status = nx_web_http_client_delete(http_client_ptr)) != NX_SUCCESS)
-  {
-    printf("HTTP Client request send fail with nx_status = (%0x02)\r\n", nx_status);
-    return result_from_nx_status(nx_status);
-  }
-
-  return AZ_OK;
+  return result;
 }
 
 static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host, void* address)
@@ -288,6 +248,11 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
   uint8_t download_complete = 0;
   az_result result;
 
+  if ((result = try_ustream()) != AZ_OK)
+  {
+    printf("shit\r\n");
+  }
+  
   if((nx_status = blob_client_init(ip, &http_client, packet_ptr, resource, host)) == NX_SUCCESS)
   {
     // send request
@@ -337,12 +302,10 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
             }
           }
         }
-
-        nx_packet_release(packet_ptr);
       }
     }
 
-    result = blob_client_delete(&http_client);
+    result = blob_client_dispose(&http_client, &packet_ptr);
   }
 
   if (hal_status != HAL_OK)
