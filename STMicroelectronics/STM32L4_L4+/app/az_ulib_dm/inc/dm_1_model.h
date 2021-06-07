@@ -27,14 +27,13 @@ extern "C"
  */
 #define DM_1_INTERFACE_NAME "dm"
 #define DM_1_INTERFACE_VERSION 1
-#define DM_1_CAPABILITY_SIZE 2
 
-typedef enum 
-{ 
-  DM_1_SOURCE_TYPE_IN_MEMORY = 0, 
-  DM_1_SOURCE_TYPE_BLOB = 1, 
-  DM_1_SOURCE_TYPE_CLI = 2
-} dm_1_source_type;
+  typedef enum
+  {
+    DM_1_SOURCE_TYPE_IN_MEMORY = 0,
+    DM_1_SOURCE_TYPE_BLOB = 1,
+    DM_1_SOURCE_TYPE_CLI = 2
+  } dm_1_source_type;
 
 /*
  * Define install command on dm interface.

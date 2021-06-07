@@ -12,9 +12,9 @@
 #include "_az_ulib_dm_interface.h"
 #include "az_ulib_capability_api.h"
 #include "az_ulib_descriptor_api.h"
+#include "az_ulib_dm_api.h"
 #include "az_ulib_ipc_api.h"
 #include "az_ulib_result.h"
-#include "az_ulib_dm_api.h"
 #include "dm_1_model.h"
 
 #include <stddef.h>
@@ -45,7 +45,7 @@ static az_result dm_1_install_span_wrapper(az_span model_in_span, az_span* model
       {
         int32_t type;
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
-        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &type));     
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &type));
         install_model_in.source_type = (dm_1_source_type)type;
       }
       else if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(DM_1_INSTALL_ADDRESS_NAME)))
@@ -55,7 +55,8 @@ static az_result dm_1_install_span_wrapper(az_span model_in_span, az_span* model
         AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atou32(jr.token.slice, &add));
         install_model_in.address = NULL + add;
       }
-      else if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(DM_1_INSTALL_PACKAGE_NAME_NAME)))
+      else if (az_json_token_is_text_equal(
+                   &jr.token, AZ_SPAN_FROM_STR(DM_1_INSTALL_PACKAGE_NAME_NAME)))
       {
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
         install_model_in.package_name
@@ -94,7 +95,8 @@ static az_result dm_1_uninstall_span_wrapper(az_span model_in_span, az_span* mod
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     while (jr.token.kind != AZ_JSON_TOKEN_END_OBJECT)
     {
-      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(DM_1_UNINSTALL_PACKAGE_NAME_NAME)))
+      if (az_json_token_is_text_equal(
+              &jr.token, AZ_SPAN_FROM_STR(DM_1_UNINSTALL_PACKAGE_NAME_NAME)))
       {
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
         uninstall_model_in.package_name
@@ -115,22 +117,18 @@ static az_result dm_1_uninstall_span_wrapper(az_span model_in_span, az_span* mod
   return AZ_ULIB_TRY_RESULT;
 }
 
-static const az_ulib_capability_descriptor DM_1_CAPABILITIES[DM_1_CAPABILITY_SIZE] = {
-  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
-      DM_1_INSTALL_COMMAND_NAME,
-      dm_1_install_concrete,
-      dm_1_install_span_wrapper),
-  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
-      DM_1_UNINSTALL_COMMAND_NAME, 
-      dm_1_uninstall_concrete,
-      dm_1_uninstall_span_wrapper)
-};
+static const az_ulib_capability_descriptor DM_1_CAPABILITIES[]
+    = { AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
+            DM_1_INSTALL_COMMAND_NAME,
+            dm_1_install_concrete,
+            dm_1_install_span_wrapper),
+        AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
+            DM_1_UNINSTALL_COMMAND_NAME,
+            dm_1_uninstall_concrete,
+            dm_1_uninstall_span_wrapper) };
 
-static const az_ulib_interface_descriptor DM_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
-    DM_1_INTERFACE_NAME,
-    DM_1_INTERFACE_VERSION,
-    DM_1_CAPABILITY_SIZE,
-    DM_1_CAPABILITIES);
+static const az_ulib_interface_descriptor DM_1_DESCRIPTOR
+    = AZ_ULIB_DESCRIPTOR_CREATE(DM_1_INTERFACE_NAME, DM_1_INTERFACE_VERSION, DM_1_CAPABILITIES);
 
 az_result _az_ulib_dm_interface_publish(void)
 {

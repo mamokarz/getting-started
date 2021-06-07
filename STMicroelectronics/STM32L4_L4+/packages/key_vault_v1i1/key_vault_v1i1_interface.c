@@ -14,8 +14,8 @@
 #include "az_ulib_ipc_interface.h"
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
-#include "key_vault_v1i1.h"
 #include "key_vault_1_model.h"
+#include "key_vault_v1i1.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -23,9 +23,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-static az_result key_vault_1_encrypt_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result key_vault_1_encrypt_concrete(
+    az_ulib_model_in model_in,
+    az_ulib_model_out model_out)
 {
-  const key_vault_1_encrypt_model_in* const in = (const key_vault_1_encrypt_model_in* const)model_in;
+  const key_vault_1_encrypt_model_in* const in
+      = (const key_vault_1_encrypt_model_in* const)model_in;
   key_vault_1_encrypt_model_out* out = (key_vault_1_encrypt_model_out*)model_out;
   return key_vault_v1i1_encrypt(in->algorithm, in->src, out->dest);
 }
@@ -41,12 +44,14 @@ static az_result key_vault_1_encrypt_span_wrapper(az_span model_in_span, az_span
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     while (jr.token.kind != AZ_JSON_TOKEN_END_OBJECT)
     {
-      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(KEY_VAULT_1_ENCRYPT_ALGORITHM_NAME)))
+      if (az_json_token_is_text_equal(
+              &jr.token, AZ_SPAN_FROM_STR(KEY_VAULT_1_ENCRYPT_ALGORITHM_NAME)))
       {
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_token_get_uint32(&jr.token, &encrypt_model_in.algorithm));
       }
-      else if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(KEY_VAULT_1_ENCRYPT_SRC_NAME)))
+      else if (az_json_token_is_text_equal(
+                   &jr.token, AZ_SPAN_FROM_STR(KEY_VAULT_1_ENCRYPT_SRC_NAME)))
       {
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
         encrypt_model_in.src
@@ -80,9 +85,12 @@ static az_result key_vault_1_encrypt_span_wrapper(az_span model_in_span, az_span
   return AZ_ULIB_TRY_RESULT;
 }
 
-static az_result key_vault_1_decrypt_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result key_vault_1_decrypt_concrete(
+    az_ulib_model_in model_in,
+    az_ulib_model_out model_out)
 {
-  const key_vault_1_decrypt_model_in* const in = (const key_vault_1_decrypt_model_in* const)model_in;
+  const key_vault_1_decrypt_model_in* const in
+      = (const key_vault_1_decrypt_model_in* const)model_in;
   key_vault_1_decrypt_model_out* out = (key_vault_1_decrypt_model_out*)model_out;
   return key_vault_v1i1_decrypt(in->src, out->dest);
 }
@@ -132,31 +140,27 @@ static az_result key_vault_1_decrypt_span_wrapper(az_span model_in_span, az_span
   return AZ_ULIB_TRY_RESULT;
 }
 
-static const az_ulib_capability_descriptor 
-KEY_VAULT_1_CAPABILITIES[KEY_VAULT_1_CAPABILITY_SIZE] = {
-  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
-      KEY_VAULT_1_ENCRYPT_COMMAND_NAME,
-      key_vault_1_encrypt_concrete, 
-      key_vault_1_encrypt_span_wrapper),
-  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
-      KEY_VAULT_1_DECRYPT_COMMAND_NAME, 
-      key_vault_1_decrypt_concrete, 
-      key_vault_1_decrypt_span_wrapper)
-};
+static const az_ulib_capability_descriptor KEY_VAULT_1_CAPABILITIES[]
+    = { AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
+            KEY_VAULT_1_ENCRYPT_COMMAND_NAME,
+            key_vault_1_encrypt_concrete,
+            key_vault_1_encrypt_span_wrapper),
+        AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
+            KEY_VAULT_1_DECRYPT_COMMAND_NAME,
+            key_vault_1_decrypt_concrete,
+            key_vault_1_decrypt_span_wrapper) };
 
-static const az_ulib_interface_descriptor 
-KEY_VAULT_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
+static const az_ulib_interface_descriptor KEY_VAULT_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
     KEY_VAULT_1_INTERFACE_NAME,
     KEY_VAULT_1_INTERFACE_VERSION,
-    KEY_VAULT_1_CAPABILITY_SIZE,
     KEY_VAULT_1_CAPABILITIES);
 
-az_result publish_interface(const az_ulib_ipc_vtable* const vtable)
+az_result publish_interface(const az_ulib_ipc_table* const table)
 {
-  return vtable->publish(&KEY_VAULT_1_DESCRIPTOR, NULL);
+  return table->publish(&KEY_VAULT_1_DESCRIPTOR, NULL);
 }
 
-az_result unpublish_interface(const az_ulib_ipc_vtable* const vtable)
+az_result unpublish_interface(const az_ulib_ipc_table* const table)
 {
-  return vtable->unpublish(&KEY_VAULT_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
+  return table->unpublish(&KEY_VAULT_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
 }

@@ -26,7 +26,6 @@ extern "C"
  */
 #define SPRINKLER_1_INTERFACE_NAME "sprinkler"
 #define SPRINKLER_1_INTERFACE_VERSION 1
-#define SPRINKLER_1_CAPABILITY_SIZE 2
 
 /*
  * Define water_now command on sprinkler interface.

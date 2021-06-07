@@ -27,7 +27,6 @@ extern "C"
  */
 #define KEY_VAULT_1_INTERFACE_NAME "key_vault"
 #define KEY_VAULT_1_INTERFACE_VERSION 1
-#define KEY_VAULT_1_CAPABILITY_SIZE 2
 
 /*
  * Define encrypt command on key_vault interface.

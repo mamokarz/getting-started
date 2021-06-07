@@ -2,9 +2,9 @@
 // Licensed under the MIT license.
 // See LICENSE file in the project root for full license information.
 
-#include "key_vault_v1i1.h"
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
+#include "key_vault_v1i1.h"
 #include <inttypes.h>
 #include <stdint.h>
 
@@ -145,8 +145,8 @@ az_result key_vault_v1i1_encrypt(uint32_t algorithm, az_span src, az_span* dest)
 {
   AZ_ULIB_TRY
   {
-     AZ_ULIB_THROW_IF_ERROR((algorithm < NUMBER_OF_KEYS), AZ_ERROR_NOT_SUPPORTED);
-     AZ_ULIB_THROW_IF_ERROR((encoded_len(src) <= az_span_size(*dest)), AZ_ERROR_NOT_ENOUGH_SPACE);
+    AZ_ULIB_THROW_IF_ERROR((algorithm < NUMBER_OF_KEYS), AZ_ERROR_NOT_SUPPORTED);
+    AZ_ULIB_THROW_IF_ERROR((encoded_len(src) <= az_span_size(*dest)), AZ_ERROR_NOT_ENOUGH_SPACE);
 
     uint32_t key_pos = 0;
     char* dest_str = (char*)az_span_ptr(*dest);
