@@ -69,7 +69,6 @@ extern "C"
  */
 #define SPRINKLER_1_INTERFACE_NAME "sprinkler"
 #define SPRINKLER_1_INTERFACE_VERSION 1
-#define SPRINKLER_1_CAPABILITY_SIZE 2
 
 /*
  * Define water_now command on sprinkler interface.
@@ -117,8 +116,8 @@ Create a file called sprinkler_v2i1_interface.c with the following content in th
 #include "az_ulib_ipc_interface.h"
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
-#include "sprinkler_v2i1.h"
 #include "sprinkler_1_model.h"
+#include "sprinkler_v2i1.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -126,10 +125,13 @@ Create a file called sprinkler_v2i1_interface.c with the following content in th
 #include <stdlib.h>
 #include <string.h>
 
-static az_result sprinkler_1_water_now_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result sprinkler_1_water_now_concrete(
+    az_ulib_model_in model_in,
+    az_ulib_model_out model_out)
 {
   (void)model_out;
-  const sprinkler_1_water_now_model_in* const in = (const sprinkler_1_water_now_model_in* const)model_in;
+  const sprinkler_1_water_now_model_in* const in
+      = (const sprinkler_1_water_now_model_in* const)model_in;
   return sprinkler_v2i1_water_now(in->area, in->timer);
 }
 
@@ -160,7 +162,8 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
     AZ_ULIB_THROW_IF_AZ_ERROR(AZ_ULIB_TRY_RESULT);
 
     // Call.
-    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_1_water_now_concrete((az_ulib_model_in)&water_now_model_in, NULL));
+    AZ_ULIB_THROW_IF_AZ_ERROR(
+        sprinkler_1_water_now_concrete((az_ulib_model_in)&water_now_model_in, NULL));
 
     // Marshalling empty water_now_model_out to JSON in model_out_span.
     *model_out_span = az_span_create_from_str("{}");
@@ -209,31 +212,29 @@ static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* m
   return AZ_ULIB_TRY_RESULT;
 }
 
-static const az_ulib_capability_descriptor SPRINKLER_1_CAPABILITIES[SPRINKLER_1_CAPABILITY_SIZE] = {
-  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
-      SPRINKLER_1_WATER_NOW_COMMAND_NAME,
-      sprinkler_1_water_now_concrete,
-      sprinkler_1_water_now_span_wrapper),
-  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
-      SPRINKLER_1_STOP_COMMAND_NAME, 
-      sprinkler_1_stop_concrete, 
-      sprinkler_1_stop_span_wrapper)
-};
+static const az_ulib_capability_descriptor SPRINKLER_1_CAPABILITIES[]
+    = { AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
+            SPRINKLER_1_WATER_NOW_COMMAND_NAME,
+            sprinkler_1_water_now_concrete,
+            sprinkler_1_water_now_span_wrapper),
+        AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
+            SPRINKLER_1_STOP_COMMAND_NAME,
+            sprinkler_1_stop_concrete,
+            sprinkler_1_stop_span_wrapper) };
 
 static const az_ulib_interface_descriptor SPRINKLER_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
     SPRINKLER_1_INTERFACE_NAME,
     SPRINKLER_1_INTERFACE_VERSION,
-    SPRINKLER_1_CAPABILITY_SIZE,
     SPRINKLER_1_CAPABILITIES);
 
-az_result publish_interface(const az_ulib_ipc_vtable* const vtable)
+az_result publish_interface(const az_ulib_ipc_table* const table)
 {
-  return vtable->publish(&SPRINKLER_1_DESCRIPTOR, NULL);
+  return table->publish(&SPRINKLER_1_DESCRIPTOR, NULL);
 }
 
-az_result unpublish_interface(const az_ulib_ipc_vtable* const vtable)
+az_result unpublish_interface(const az_ulib_ipc_table* const table)
 {
-  return vtable->unpublish(&SPRINKLER_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
+  return table->unpublish(&SPRINKLER_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
 }
 ```
 
@@ -242,21 +243,24 @@ Each capability may contain 2 functions, the `[capability]_concrete`, and `[capa
 For example, in the `sprinkler_1_water_now_concrete`, the business logic in implemented in `sprinkler_v2i1_water_now`.
 
 ```c
-static az_result sprinkler_1_water_now_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result sprinkler_1_water_now_concrete(
+    az_ulib_model_in model_in,
+    az_ulib_model_out model_out)
 {
   (void)model_out;
-  const sprinkler_1_water_now_model_in* const in = (const sprinkler_1_water_now_model_in* const)model_in;
+  const sprinkler_1_water_now_model_in* const in
+      = (const sprinkler_1_water_now_model_in* const)model_in;
   return sprinkler_v2i1_water_now(in->area, in->timer);
 }
 ```
 
 The `[capability]_span_wrapper` are optional, they are used by the IPC to call the capability using the arguments in JSON `az_span`. Those functions parse the JSON and call the `[capability]_concrete`. If a capability does not contains the `[capability]_span_wrapper`, the IPC will return *AZ_ERROR_NOT_SUPPORTED* if someone try to call this capability using JSON arguments. In the current implementation, we use an static library `az_core` to parse those JSON.
 
-To publish an interface, it is necessary to create the interface descriptor `az_ulib_interface_descriptor`. IPC provides the macro `AZ_ULIB_DESCRIPTOR_CREATE` that will properly organize the interface information inside of the descriptor, this macro requires a list of capabilities. The macro `AZ_ULIB_DESCRIPTOR_ADD_COMMAND` helps to create each capability.
+To publish an interface, it is necessary to create the interface descriptor `az_ulib_interface_descriptor`. IPC provides the macro `AZ_ULIB_DESCRIPTOR_CREATE` that will properly organize the interface information inside of the descriptor, this macro requires a list of capabilities. The macro `AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY` helps to create each capability.
 
   **NOTE**: Currently IPC only support Commands. Add support for Properties, Telemetry and Command Async are in our backlog. 
 
-If a capability doesn't support JSON, you shall pass `NULL` in the 4th argument of `AZ_ULIB_DESCRIPTOR_ADD_COMMAND`.
+If a capability doesn't support JSON, you shall pass `NULL` in the 4th argument of `AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY`.
 
 The Device Manager will call the `publish_interface` after bring the code to the memory, and `unpublish_interface` before remove it from the memory. Both functions are required as is. 
 
@@ -300,8 +304,8 @@ And another file called sprinkler_v2i1.c with the following content.
 // Licensed under the MIT license.
 // See LICENSE file in the project root for full license information.
 
-#include "stm32l4xx_hal.h"
 #include "stm32l475xx.h"
+#include "stm32l4xx_hal.h"
 
 #include "az_ulib_result.h"
 #include "sprinkler_v2i1.h"
@@ -311,12 +315,12 @@ And another file called sprinkler_v2i1.c with the following content.
 
 az_result sprinkler_v2i1_water_now(int32_t area, int32_t timer)
 {
-  if(timer != 0)
+  if (timer != 0)
   {
     return AZ_ERROR_NOT_SUPPORTED;
   }
 
-  switch(area)
+  switch (area)
   {
     case 0:
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
@@ -336,7 +340,7 @@ az_result sprinkler_v2i1_water_now(int32_t area, int32_t timer)
 
 az_result sprinkler_v2i1_stop(int32_t area)
 {
-  switch(area)
+  switch (area)
   {
     case 0:
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
