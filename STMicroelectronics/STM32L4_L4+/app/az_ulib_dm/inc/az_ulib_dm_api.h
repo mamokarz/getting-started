@@ -13,11 +13,11 @@
 #ifndef AZ_ULIB_DM_API_H
 #define AZ_ULIB_DM_API_H
 
-#include "az_ulib_result.h"
 #include "az_ulib_pal_os_api.h"
 #include "az_ulib_port.h"
-#include "dm_1_model.h"
+#include "az_ulib_result.h"
 #include "azure/az_core.h"
+#include "dm_1_model.h"
 
 #ifndef __cplusplus
 #include <stdint.h>
@@ -55,7 +55,7 @@ typedef struct az_ulib_dm_tag
 /**
  * @brief   Initialize the Device Manager.
  *
- * This API initialize the DM [Device Manager]. It shall be called only once, at the beginning of 
+ * This API initialize the DM [Device Manager]. It shall be called only once, at the beginning of
  * the code execution.
  *
  * @note    This API **is not** thread safe, the other DM API shall only be called after the
@@ -97,7 +97,7 @@ AZ_NODISCARD az_result az_ulib_dm_deinit(void);
  * @param[in]   source_type     The #dm_1_source_type with the package source type.
  * @param[in]   address         The `void*` with the memory where package shall be.
  * @param[in]   package_name    The `az_span` with the package name.
- * 
+ *
  * @pre     DM shall already been initialized.
  *
  * @return The #az_result with the result of the installation.
@@ -106,14 +106,12 @@ AZ_NODISCARD az_result az_ulib_dm_deinit(void);
  *  @retval #AZ_ERROR_ULIB_ELEMENT_DUPLICATE    If the package is already installed.
  *  @retval #AZ_ERROR_NOT_ENOUGH_SPACE          If there is not enough space to handle the package.
  */
-AZ_NODISCARD az_result az_ulib_dm_install(
-    dm_1_source_type source_type, 
-    void* address, 
-    az_span package_name);
+AZ_NODISCARD az_result
+az_ulib_dm_install(dm_1_source_type source_type, void* address, az_span package_name);
 
 /**
  * @brief   Uninstall a package from the device.
- * 
+ *
  * @param[in]   package_name    The `az_span` with the package name.
  *
  * @pre     DM shall already been initialized.
