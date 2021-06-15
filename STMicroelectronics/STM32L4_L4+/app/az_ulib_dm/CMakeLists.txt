@@ -8,6 +8,8 @@ add_library(az_ulib_dm
   ${CMAKE_CURRENT_LIST_DIR}/src/_az_ulib_dm_blob.c
   ${CMAKE_CURRENT_LIST_DIR}/src/az_ulib_dm_interface.c
   ${CMAKE_CURRENT_LIST_DIR}/src/az_ulib_dm.c
+  ${CMAKE_CURRENT_LIST_DIR}/src/az_ulib_registry_interface.c
+  ${CMAKE_CURRENT_LIST_DIR}/src/az_ulib_registry.c
   ${CMAKE_CURRENT_LIST_DIR}/src/stm32l475_flash_driver.c
 )
 
