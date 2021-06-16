@@ -7,3 +7,4 @@ AlignConsecutiveAssignments: true
 IndentCaseLabels: true
 PointerAlignment: Left
 IndentWidth: 2
+ColumnLimit: 100
