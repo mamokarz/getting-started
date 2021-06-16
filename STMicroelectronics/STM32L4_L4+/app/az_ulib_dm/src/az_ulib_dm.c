@@ -4,12 +4,12 @@
 
 #include "_az_ulib_dm_blob.h"
 #include "_az_ulib_dm_interface.h"
-#include "az_ulib_result.h"
 #include "az_ulib_dm_api.h"
 #include "az_ulib_ipc_api.h"
 #include "az_ulib_ipc_interface.h"
 #include "az_ulib_pal_os_api.h"
 #include "az_ulib_port.h"
+#include "az_ulib_result.h"
 #include "azure/az_core.h"
 #include "dm_1_model.h"
 #include <azure/core/internal/az_precondition_internal.h>
@@ -22,14 +22,14 @@
  */
 static az_ulib_dm* volatile _az_dm_cb = NULL;
 
-typedef az_result (*publish_interface)(const az_ulib_ipc_vtable* const vtable);
-typedef az_result (*unpublish_interface)(const az_ulib_ipc_vtable* const vtable);
+typedef az_result (*publish_interface)(const az_ulib_ipc_table* const table);
+typedef az_result (*unpublish_interface)(const az_ulib_ipc_table* const table);
 
 static _az_ulib_dm_package* get_first_package_free(void)
 {
-  for(int i = 0; i < AZ_ULIB_CONFIG_MAX_DM_PACKAGES; i++)
+  for (int i = 0; i < AZ_ULIB_CONFIG_MAX_DM_PACKAGES; i++)
   {
-    if(_az_dm_cb->_internal.package_list[i].address == NULL)
+    if (_az_dm_cb->_internal.package_list[i].address == NULL)
     {
       return &_az_dm_cb->_internal.package_list[i];
     }
@@ -39,11 +39,11 @@ static _az_ulib_dm_package* get_first_package_free(void)
 
 static _az_ulib_dm_package* get_package(az_span name)
 {
-  for(int i = 0; i < AZ_ULIB_CONFIG_MAX_DM_PACKAGES; i++)
+  for (int i = 0; i < AZ_ULIB_CONFIG_MAX_DM_PACKAGES; i++)
   {
-    if(_az_dm_cb->_internal.package_list[i].address != NULL)
+    if (_az_dm_cb->_internal.package_list[i].address != NULL)
     {
-      if(az_span_is_content_equal(_az_dm_cb->_internal.package_list[i].name, name))
+      if (az_span_is_content_equal(_az_dm_cb->_internal.package_list[i].name, name))
       {
         return &_az_dm_cb->_internal.package_list[i];
       }
@@ -61,7 +61,7 @@ AZ_NODISCARD az_result az_ulib_dm_init(az_ulib_dm* dm_handle)
 
   az_pal_os_lock_init(&(_az_dm_cb->_internal.lock));
 
-  for(int i = 0; i < AZ_ULIB_CONFIG_MAX_DM_PACKAGES; i++)
+  for (int i = 0; i < AZ_ULIB_CONFIG_MAX_DM_PACKAGES; i++)
   {
     _az_ulib_dm_package* package = &(_az_dm_cb->_internal.package_list[i]);
     package->address = NULL;
@@ -87,8 +87,8 @@ static az_result install_in_memory(void* base_address, az_span package_name)
   AZ_ULIB_TRY
   {
     /* Is this a knowing package? */
-    AZ_ULIB_THROW_IF_ERROR((*(uint32_t*)base_address == 0x4D4F4455), 
-                          AZ_ERROR_ULIB_INCOMPATIBLE_VERSION);
+    AZ_ULIB_THROW_IF_ERROR(
+        (*(uint32_t*)base_address == 0x4D4F4455), AZ_ERROR_ULIB_INCOMPATIBLE_VERSION);
 
     /* Does the package already exist? */
     AZ_ULIB_THROW_IF_ERROR((get_package(package_name) == NULL), AZ_ERROR_ULIB_ELEMENT_DUPLICATE);
@@ -99,10 +99,10 @@ static az_result install_in_memory(void* base_address, az_span package_name)
 
     /* Call the publsh interface function in the package. */
     uint32_t publish_position = *((uint32_t*)base_address + AZ_ULIB_DM_PACKAGE_PUBLISH);
-    publish_interface publish = (publish_interface)((uint8_t*)base_address + publish_position + 
-        (AZ_ULIB_DM_PACKAGE_PUBLISH << 2));
-    const az_ulib_ipc_vtable* vtable = az_ulib_ipc_get_vtable();
-    AZ_ULIB_THROW_IF_AZ_ERROR(publish(vtable));
+    publish_interface publish = (publish_interface)(
+        (uint8_t*)base_address + publish_position + (AZ_ULIB_DM_PACKAGE_PUBLISH << 2));
+    const az_ulib_ipc_table* table = az_ulib_ipc_get_table();
+    AZ_ULIB_THROW_IF_AZ_ERROR(publish(table));
 
     /* Store package information. */
     az_span_copy(package->name, package_name);
@@ -139,17 +139,15 @@ static az_result install_from_cli(void* base_address, az_span package_name)
   return AZ_ERROR_NOT_IMPLEMENTED;
 }
 
-AZ_NODISCARD az_result az_ulib_dm_install(
-    dm_1_source_type source_type, 
-    void* base_address, 
-    az_span package_name)
+AZ_NODISCARD az_result
+az_ulib_dm_install(dm_1_source_type source_type, void* base_address, az_span package_name)
 {
   _az_PRECONDITION_NOT_NULL(_az_dm_cb);
   az_result result;
 
   az_pal_os_lock_acquire(&(_az_dm_cb->_internal.lock));
   {
-    switch(source_type)
+    switch (source_type)
     {
       case DM_1_SOURCE_TYPE_IN_MEMORY:
         result = install_in_memory(base_address, package_name);
@@ -178,14 +176,13 @@ AZ_NODISCARD az_result az_ulib_dm_uninstall(az_span package_name)
 
   az_pal_os_lock_acquire(&(_az_dm_cb->_internal.lock));
   {
-    if((package = get_package(package_name)) != NULL)
+    if ((package = get_package(package_name)) != NULL)
     {
       uint32_t unpublish_position = *((uint32_t*)package->address + AZ_ULIB_DM_PACKAGE_UNPUBLISH);
-      unpublish_interface unpublish = 
-          (unpublish_interface)((uint8_t*)package->address + unpublish_position + 
-              (AZ_ULIB_DM_PACKAGE_UNPUBLISH << 2));
-      const az_ulib_ipc_vtable* vtable = az_ulib_ipc_get_vtable();
-      if((result = unpublish(vtable)) == AZ_OK)
+      unpublish_interface unpublish = (unpublish_interface)(
+          (uint8_t*)package->address + unpublish_position + (AZ_ULIB_DM_PACKAGE_UNPUBLISH << 2));
+      const az_ulib_ipc_table* table = az_ulib_ipc_get_table();
+      if ((result = unpublish(table)) == AZ_OK)
       {
         package->address = NULL;
         package->name = az_span_create(package->name_buf, AZ_ULIB_CONFIG_MAX_DM_PACKAGE_NAME);

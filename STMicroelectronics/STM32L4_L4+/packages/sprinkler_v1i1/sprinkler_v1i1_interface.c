@@ -14,8 +14,8 @@
 #include "az_ulib_ipc_interface.h"
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
-#include "sprinkler_v1i1.h"
 #include "sprinkler_1_model.h"
+#include "sprinkler_v1i1.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -23,10 +23,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-static az_result sprinkler_1_water_now_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result sprinkler_1_water_now_concrete(
+    az_ulib_model_in model_in,
+    az_ulib_model_out model_out)
 {
   (void)model_out;
-  const sprinkler_1_water_now_model_in* const in = (const sprinkler_1_water_now_model_in* const)model_in;
+  const sprinkler_1_water_now_model_in* const in
+      = (const sprinkler_1_water_now_model_in* const)model_in;
   return sprinkler_v1i1_water_now(in->area, in->timer);
 }
 
@@ -57,7 +60,8 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
     AZ_ULIB_THROW_IF_AZ_ERROR(AZ_ULIB_TRY_RESULT);
 
     // Call.
-    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_1_water_now_concrete((az_ulib_model_in)&water_now_model_in, NULL));
+    AZ_ULIB_THROW_IF_AZ_ERROR(
+        sprinkler_1_water_now_concrete((az_ulib_model_in)&water_now_model_in, NULL));
 
     // Marshalling empty water_now_model_out to JSON in model_out_span.
     *model_out_span = az_span_create_from_str("{}");
@@ -106,29 +110,27 @@ static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* m
   return AZ_ULIB_TRY_RESULT;
 }
 
-static const az_ulib_capability_descriptor SPRINKLER_1_CAPABILITIES[SPRINKLER_1_CAPABILITY_SIZE] = {
-  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
-      SPRINKLER_1_WATER_NOW_COMMAND_NAME,
-      sprinkler_1_water_now_concrete,
-      sprinkler_1_water_now_span_wrapper),
-  AZ_ULIB_DESCRIPTOR_ADD_COMMAND(
-      SPRINKLER_1_STOP_COMMAND_NAME, 
-      sprinkler_1_stop_concrete, 
-      sprinkler_1_stop_span_wrapper)
-};
+static const az_ulib_capability_descriptor SPRINKLER_1_CAPABILITIES[]
+    = { AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
+            SPRINKLER_1_WATER_NOW_COMMAND_NAME,
+            sprinkler_1_water_now_concrete,
+            sprinkler_1_water_now_span_wrapper),
+        AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
+            SPRINKLER_1_STOP_COMMAND_NAME,
+            sprinkler_1_stop_concrete,
+            sprinkler_1_stop_span_wrapper) };
 
 static const az_ulib_interface_descriptor SPRINKLER_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
     SPRINKLER_1_INTERFACE_NAME,
     SPRINKLER_1_INTERFACE_VERSION,
-    SPRINKLER_1_CAPABILITY_SIZE,
     SPRINKLER_1_CAPABILITIES);
 
-az_result publish_interface(const az_ulib_ipc_vtable* const vtable)
+az_result publish_interface(const az_ulib_ipc_table* const table)
 {
-  return vtable->publish(&SPRINKLER_1_DESCRIPTOR, NULL);
+  return table->publish(&SPRINKLER_1_DESCRIPTOR, NULL);
 }
 
-az_result unpublish_interface(const az_ulib_ipc_vtable* const vtable)
+az_result unpublish_interface(const az_ulib_ipc_table* const table)
 {
-  return vtable->unpublish(&SPRINKLER_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
+  return table->unpublish(&SPRINKLER_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
 }

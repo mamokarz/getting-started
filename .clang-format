@@ -1,10 +1,18 @@
-BasedOnStyle:  Microsoft
+---
+# We'll use defaults from the LLVM style, but with the following differences.
+BasedOnStyle: LLVM
+AlignAfterOpenBracket: AlwaysBreak
+AlignEscapedNewlines: Left
+AlignOperands: false
+AlignTrailingComments: false
+AllowAllParametersOfDeclarationOnNextLine: false
 BinPackArguments: false
 BinPackParameters: false
-AlignAfterOpenBracket: DontAlign
-AlignConsecutiveMacros: true
-AlignConsecutiveAssignments: true
-IndentCaseLabels: true
-PointerAlignment: Left
-IndentWidth: 2
+BreakBeforeBinaryOperators: All
+BreakBeforeBraces: Allman
 ColumnLimit: 100
+Cpp11BracedListStyle: false
+IndentCaseLabels: true
+PenaltyReturnTypeOnItsOwnLine: 300
+PointerAlignment: Left
+...
