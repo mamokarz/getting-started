@@ -24,8 +24,7 @@
 #define USER_AGENT_NAME  "User-Agent: "
 #define USER_AGENT_VALUE "Azure RTOS Device (STM32)"
 
-NX_WEB_HTTP_CLIENT _blob_http_client;
-NX_PACKET _blob_packet;
+NX_WEB_HTTP_CLIENT blob_http_client;
 
 static az_result concrete_set_position(az_ulib_ustream* ustream_instance, offset_t position);
 static az_result concrete_reset(az_ulib_ustream* ustream_instance);
@@ -121,7 +120,7 @@ AZ_NODISCARD UINT blob_client_init(NXD_ADDRESS* ip, NX_WEB_HTTP_CLIENT* http_cli
   return nx_status;
 }
 
-AZ_NODISCARD az_result blob_client_grab_chunk(NX_WEB_HTTP_CLIENT* http_client_ptr, NX_PACKET** packet_ptr_ref, uint8_t* done)
+AZ_NODISCARD az_result blob_client_grab_chunk(NX_WEB_HTTP_CLIENT* http_client_ptr, NX_PACKET** packet_ptr_ref)
 {
   UINT nx_status; 
 
@@ -134,19 +133,16 @@ AZ_NODISCARD az_result blob_client_grab_chunk(NX_WEB_HTTP_CLIENT* http_client_pt
   // done processing response body
   if (nx_status == NX_WEB_HTTP_GET_DONE)
   {
-    *done = 1;
-    return AZ_OK;
+    return AZ_ULIB_EOF;
   }
   // there was an error
   else if (nx_status != NX_SUCCESS)
   {
-    *done = 1;
     return result_from_nx_status(nx_status);
   }
   // successfully grabbed chunk and there is more to grab
   else
   {
-    *done = 0;
     return AZ_OK;
   }
 }
@@ -172,7 +168,7 @@ AZ_NODISCARD az_result blob_client_dispose(NX_WEB_HTTP_CLIENT* http_client_ptr, 
 
   if ((nx_status = nx_web_http_client_delete(http_client_ptr)) != NX_SUCCESS)
   {
-    printf("HTTP Client request send fail with nx_status = (%0x02)\r\n", nx_status);
+    printf("HTTP Client delete fail with nx_status = (%0x02)\r\n", nx_status);
     return result_from_nx_status(nx_status);
   }
 
@@ -256,40 +252,75 @@ static az_result concrete_read(
   _az_PRECONDITION(buffer_length > 0);
   _az_PRECONDITION_NOT_NULL(size);
 
-  az_result result;
+  az_result result = AZ_OK;
 
   az_ulib_ustream_data_cb* control_block = ustream_instance->control_block;
-  az_blob_ustream_interface blob_interface = (az_blob_ustream_interface)control_block->ptr;
+  az_blob_http_cb* blob_http_cb = (az_blob_http_cb*)control_block->ptr;
+  
+  // keep track of our position in the local buffer
+  size_t remain_size_local_buffer = buffer_length;
 
-  if ((result = blob_client_grab_chunk(blob_interface->http_client_ptr, &blob_interface->packet_ptr, &blob_interface->download_complete)) == AZ_OK)
+  // reset size
+  *size = 0;
+
+  // while we still have room left in the local buffer and we have not reached the end of the package
+  do
   {
-    // increase destination pointer by size of last chunk
-    blob_interface->destination_ptr += az_span_size(blob_interface->data);
+    // keep track of our position in the inner buffer (packer)
+    size_t remain_size_inner_buffer = blob_http_cb->packet_ptr->nx_packet_length - (size_t)ustream_instance->offset_diff;
 
-    // save pointer to chunk
-    blob_interface->data = az_span_create(blob_interface->packet_ptr->nx_packet_prepend_ptr, blob_interface->packet_ptr->nx_packet_length);
-  }
+    // if we have not reached the end of the inner buffer, copy the next data to the local buffer
+    if(remain_size_inner_buffer)
+    {
+      // size to copy is the smaller of the remaining size in the inner buffer or the local buffer
+      size_t size_to_copy = remain_size_inner_buffer < remain_size_local_buffer ? 
+                            remain_size_inner_buffer : remain_size_local_buffer;
 
+      // copy data from inner buffer to local buffer
+      IGNORE_MEMCPY_TO_NULL
+      memcpy(
+          buffer + (buffer_length - remain_size_local_buffer),
+          blob_http_cb->packet_ptr->nx_packet_prepend_ptr + ustream_instance->offset_diff,
+          size_to_copy);
+      RESUME_WARNINGS
+      
+      // decrease the remaining size in our local buffer
+      remain_size_local_buffer -= size_to_copy;
 
-  // if (ustream_instance->inner_current_position >= ustream_instance->length)
-  // {
-  //   *size = 0;
-  //   result = AZ_ULIB_EOF;
-  // }
-  // else
-  // {
-  //   size_t remain_size
-  //       = ustream_instance->length - (size_t)ustream_instance->inner_current_position;
-  //   *size = (buffer_length < remain_size) ? buffer_length : remain_size;
-  //   IGNORE_MEMCPY_TO_NULL
-  //   memcpy(
-  //       buffer,
-  //       (const uint8_t*)blob_interface->data + ustream_instance->inner_current_position,
-  //       *size);
-  //   RESUME_WARNINGS
-  //   ustream_instance->inner_current_position += *size;
-  //   result = AZ_OK;
-  // }
+      // increase the passed size for the caller
+      *size += size_to_copy;
+
+      // increase offset to keep track of our position in the inner buffer 
+      ustream_instance->offset_diff += size_to_copy;
+    }
+
+    // else we must grab another packet
+    else
+    {
+      if ((result = blob_client_grab_chunk(blob_http_cb->http_client_ptr, &blob_http_cb->packet_ptr)) == AZ_OK)
+      {
+        // increase current position by size of last chunk
+        ustream_instance->inner_current_position += ustream_instance->offset_diff;
+        // reset current offset
+        ustream_instance->offset_diff = 0;
+      }
+    } 
+  } while (remain_size_local_buffer && (result == AZ_OK));
+
+  
+
+  // while write_buffer_offset > buffer_length
+  /*
+    if(remain_size_inner_buffer == 0 && remain_size_local_buffer > 0)
+      result = blob_client_grab_chunk()
+      if (result == AZ_ULIB_EOF)
+        break;
+    else
+      break;
+    
+    size_to_copy = remain_size_inner_buffer (packet) < remain_size_local_buffer (local buffer) ? rmsib : 
+    memcpy(local_buffer, packet + remain_Szie_inner_buffer, size_to_copy)
+  */
 
   return result;
 }
@@ -400,59 +431,38 @@ AZ_NODISCARD az_result az_ulib_ustream_init(
 
   init_instance(ustream_instance, ustream_control_block, 0, 0, data_buffer_length);
 
-  return AZ_OK;
+  return AZ_OK; 
 }
 
-AZ_NODISCARD az_result create_ustream_from_blob(az_ulib_ustream_data_cb* data_cb, az_ulib_ustream* ustream_instance_ptr, 
-                                                uint8_t* user_buffer, uint32_t user_buffer_size,
-                                                az_blob_ustream_interface blob_ustream_interface, 
-                                                NXD_ADDRESS* ip_ptr, CHAR* resource, CHAR* host)
+AZ_NODISCARD az_result create_ustream_from_blob(az_ulib_ustream* ustream_instance, az_ulib_ustream_data_cb* ustream_data_cb, 
+                                                az_blob_http_cb* blob_http_cb, 
+                                                NXD_ADDRESS* ip, CHAR* resource, CHAR* host)
 {
   az_result result;
   UINT nx_status;
 
-  // initialize ustream
-  if ((result = az_ulib_ustream_init(
-            ustream_instance_ptr,
-            data_cb,
-            free,
-            (const uint8_t*)user_buffer,
-            user_buffer_size,
-            NULL))
-      != AZ_OK)
-  {
-    printf("Could not initialize ustream_instance\r\n");
-  }
-
-  // initialize blob ustream control block and point ustream instance control block to it
-  blob_ustream_interface->http_client_ptr = &_blob_http_client;
-  blob_ustream_interface->packet_ptr = &_blob_packet;
-  blob_ustream_interface->ip_ptr = ip_ptr;
-  blob_ustream_interface->resource = resource;
-  blob_ustream_interface->host = host;
-  blob_ustream_interface->download_complete = 0;
-  // blob_ustream_interface->destination_ptr = (uint8_t*)NULL;
-  ustream_instance_ptr->control_block->ptr = (const az_ulib_ustream_data*)blob_ustream_interface;
-
-  //Read the file, it will return the first packet.
-  //  using:   nx_web_http_client_response_boby_get(&http_client, &packet_ptr, 500);
+  // initialize blob http control block
+  blob_http_cb->http_client_ptr = &blob_http_client;
+  blob_http_cb->ip = ip;
+  blob_http_cb->resource = resource;
+  blob_http_cb->host = host;
 
   // initialize blob client
-  if((nx_status = blob_client_init(blob_ustream_interface->ip_ptr, blob_ustream_interface->http_client_ptr, blob_ustream_interface->packet_ptr, 
-                                  blob_ustream_interface->resource, blob_ustream_interface->host)) != NX_SUCCESS)
+  if((nx_status = blob_client_init(blob_http_cb->ip, blob_http_cb->http_client_ptr, blob_http_cb->packet_ptr, 
+                                  blob_http_cb->resource, blob_http_cb->host)) != NX_SUCCESS)
   { 
     printf("Initialize blob client failed with nx_status = (%0x02)\r\n", nx_status);
     result = result_from_nx_status(nx_status);
   }
   
   // send request
-  else if ((result = blob_client_request_send(blob_ustream_interface->http_client_ptr, DCF_WAIT_TIME)) != AZ_OK)
+  else if ((result = blob_client_request_send(blob_http_cb->http_client_ptr, DCF_WAIT_TIME)) != AZ_OK)
   {
     printf("Blob client request send failed with nx_status = (%0x02)\r\n", nx_status);
   }
   
   // grab first chunk and save package size
-  else if ((result = blob_client_grab_chunk(blob_ustream_interface->http_client_ptr, &blob_ustream_interface->packet_ptr, &blob_ustream_interface->download_complete)) != AZ_OK)
+  else if ((result = blob_client_grab_chunk(blob_http_cb->http_client_ptr, &blob_http_cb->packet_ptr)) != AZ_OK)
   {
     printf("Blob client grab chunk failed with nx_status = (%0x02)\r\n", nx_status);
   }
@@ -460,26 +470,36 @@ AZ_NODISCARD az_result create_ustream_from_blob(az_ulib_ustream_data_cb* data_cb
   // populate blob cb with package data and metadata
   else
   {
-    // save pointer to first chunk
-    blob_ustream_interface->data = az_span_create(blob_ustream_interface->packet_ptr->nx_packet_prepend_ptr, blob_ustream_interface->packet_ptr->nx_packet_length);
-
-    // set ustream length to total package size and round up to nearest 2KB (0x0800)
-    ustream_instance_ptr->length = (uint32_t)blob_ustream_interface->http_client_ptr->nx_web_http_client_total_receive_bytes;
-    if ((ustream_instance_ptr->length & 0x07FF) != 0x000)
+    // grab blob package size for ustream init
+    uint32_t package_size = (uint32_t)blob_http_client.nx_web_http_client_total_receive_bytes;
+    if ((package_size & 0x07FF) != 0x000)
     {
-      ustream_instance_ptr->length = (ustream_instance_ptr->length & 0xFFFFF800) + 0x0800;
+      package_size = (package_size & 0xFFFFF800) + 0x0800;
+    }
+
+    // initialize ustream with blob http control block
+    if ((result = az_ulib_ustream_init(
+              ustream_instance,
+              ustream_data_cb,
+              free,
+              (const uint8_t*)blob_http_cb,
+              package_size,
+              NULL))
+        != AZ_OK)
+    {
+      printf("Could not initialize ustream_instance\r\n");
     }
   }
 
   return result;
 }
 
-AZ_NODISCARD az_result ustream_blob_client_dispose(az_ulib_ustream* ustream_instance_ptr,
+az_result ustream_blob_client_dispose(az_ulib_ustream* ustream_instance,
                                                   NX_WEB_HTTP_CLIENT* http_client_ptr, NX_PACKET** packet_ptr_ref)
 {
   az_result result;
 
-  if ((result = az_ulib_ustream_dispose(ustream_instance_ptr)) != AZ_OK)
+  if ((result = az_ulib_ustream_dispose(ustream_instance)) != AZ_OK)
   {
     printf("Could not dispose of ustream_instance\r\n");
   }
@@ -488,28 +508,3 @@ AZ_NODISCARD az_result ustream_blob_client_dispose(az_ulib_ustream* ustream_inst
 
   return result;
 }
-
-// AZ_NODISCARD az_result ustream_print_blob_package(az_ulib_ustream* ustream_instance_ptr, uint32_t user_buffer_size,
-//                                     NX_WEB_HTTP_CLIENT* http_client_ptr, NX_PACKET** packet_ptr_ref)
-// {
-//   az_result result;
-//   size_t returned_size;
-//   uint8_t user_buf[user_buffer_size] = { 0 };
-
-//   // Read ustream until receive AZIOT_ULIB_EOF
-//   (void)printf("\r\n------printing the ustream------\r\n");
-//   while ((result = az_ulib_ustream_read(ustream_instance_ptr, user_buf, user_buffer_size - 1, &returned_size))
-//          == AZ_OK)
-//   {
-//     user_buf[returned_size] = '\0';
-//     (void)printf("%s", user_buf);
-//   }
-//   (void)printf("\r\n-----------end of ustream------------\r\n\r\n");
-
-//   // Change return to AZ_OK if last returned value was AZ_ULIB_EOF
-//   if (result == AZ_ULIB_EOF)
-//   {
-//     result = AZ_OK;
-//   }
-//   return result;
-// }

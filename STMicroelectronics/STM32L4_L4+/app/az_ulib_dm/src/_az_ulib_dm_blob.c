@@ -18,10 +18,10 @@
 
 static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* slice)
 {
-  int32_t size = az_span_size(span);
+  int32_t returned_size = az_span_size(span);
   uint8_t* buf = az_span_ptr(span);
   int32_t end  = start;
-  while (end < size)
+  while (end < returned_size)
   {
     if (buf[end] == c)
     {
@@ -119,10 +119,10 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_get_package_name(az_span url, az_span* n
   return AZ_ULIB_TRY_RESULT;
 }
 
-AZ_NODISCARD az_result _az_ulib_dm_blob_get_size(az_span url, int32_t* size)
+AZ_NODISCARD az_result _az_ulib_dm_blob_get_size(az_span url, int32_t* returned_size)
 {
   (void)url;
-  (void)size;
+  (void)returned_size;
   return AZ_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -143,196 +143,85 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status)
   }
 }
 
-// static az_result print_ustream(az_ulib_ustream* ustream)
-// {
-//   az_result result;
-//   size_t returned_size;
-//   uint8_t user_buf[USER_BUFFER_SIZE] = { 0 };
+static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void* address)
+{
+  az_result result;
+  HAL_StatusTypeDef hal_status;
 
-//   // Read ustream until receive AZIOT_ULIB_EOF
-//   (void)printf("\r\n------printing the ustream------\r\n");
-//   while ((result = az_ulib_ustream_read(ustream, user_buf, USER_BUFFER_SIZE - 1, &returned_size))
-//          == AZ_OK)
-//   {
-//     user_buf[returned_size] = '\0';
-//     (void)printf("%s", user_buf);
-//   }
-//   (void)printf("\r\n-----------end of ustream------------\r\n\r\n");
+  uint8_t local_buffer[1024] = {0};
+  size_t returned_size = 0;
+  
+  if ((result = az_ulib_ustream_get_remaining_size(ustream_instance, &returned_size)) != AZ_OK)
+  {
+    printf("ustream get remaining size failed with result  = (%0lx02)\r\n", result);
+  }
 
-//   // Change return to AZ_OK if last returned value was AZ_ULIB_EOF
-//   if (result == AZ_ULIB_EOF)
-//   {
-//     result = AZ_OK;
-//   }
-//   return result;
-// }
+  // erase flash
+  else if ((hal_status = internal_flash_erase((UCHAR*)address, returned_size)) != HAL_OK)
+  {
+    printf("Internal flash erase failed with hal_status = (%0x02)\r\n", hal_status);
+    result = result_from_hal_status(hal_status);
+  }
 
+  else
+  {
+    do
+    {
+      // grab next buffer-full from ustream_instance
+      if((result = az_ulib_ustream_read(ustream_instance, local_buffer, sizeof(local_buffer), &returned_size)) == AZ_OK)
+      {
+        // write to flash if we have not reached the end of this chunk of data 
+        if ((hal_status = internal_flash_write((uint8_t*)address, local_buffer, returned_size)) != HAL_OK)
+        {
+          printf("Internal flash write failed with hal_status = (%0x02)\r\n", hal_status);
+          result = result_from_hal_status(hal_status);
+        }
 
-// static az_result try_ustream()
-// {
-//   az_result result;
+        // increment the write address by the last write-size
+        address += returned_size;
+      }
+    } while (result == AZ_OK);
+  }
 
-//   az_ulib_ustream_data_cb* data_cb;
-//   if ((data_cb = (az_ulib_ustream_data_cb*)malloc(sizeof(az_ulib_ustream_data_cb))) != NULL)
-//   {
-//     az_ulib_ustream ustream_instance;
-//     if ((result = az_ulib_ustream_init(
-//              &ustream_instance,
-//              data_cb,
-//              free,
-//              (const uint8_t*)USTREAM_ONE_STRING,
-//              sizeof(USTREAM_ONE_STRING),
-//              NULL))
-//         != AZ_OK)
-//     {
-//       printf("Could not initialize ustream_instance\r\n");
-//     }
-//     else if ((result = print_ustream(&ustream_instance)) != AZ_OK)
-//     {
-//       az_ulib_ustream_dispose(&ustream_instance);
-//       printf("Could not print the original ustream_instance\r\n");
-//     }
-//     else if ((result = az_ulib_ustream_reset(&ustream_instance)) != AZ_OK)
-//     {
-//       az_ulib_ustream_dispose(&ustream_instance);
-//       printf("Could not reset ustream_instance\r\n");
-//     }
-//     else
-//     {
-//       az_ulib_ustream ustream_instance_split;
+  if(result == AZ_ULIB_EOF)
+  {
+    result = AZ_OK;
+  }
+  
+  return result;
+}
 
-//       if ((result
-//            = az_ulib_ustream_split(&ustream_instance, &ustream_instance_split, SPLIT_POSITION))
-//           != AZ_OK)
-//       {
-//         printf("Could not split ustream_instance\r\n");
-//       }
-//       else
-//       {
-//         if ((result = print_ustream(&ustream_instance)) != AZ_OK)
-//         {
-//           printf("Could not print the split ustream_instance\r\n");
-//         }
-//         else if ((result = print_ustream(&ustream_instance_split)) != AZ_OK)
-//         {
-//           printf("Could not print ustream_instance_split\r\n");
-//         }
-
-//         if ((result = az_ulib_ustream_dispose(&ustream_instance_split)) != AZ_OK)
-//         {
-//           printf("Could not dispose of ustream_instance_split\r\n");
-//         }
-//       }
-
-//       if ((result = az_ulib_ustream_dispose(&ustream_instance)) != AZ_OK)
-//       {
-//         printf("Could not dispose of ustream_instance\r\n");
-//       }
-//     }
-//   }
-//   else
-//   {
-//     result = AZ_ERROR_OUT_OF_MEMORY;
-//   }
-
-//   return result;
-// }
-
-az_blob_ustream_cb blob_ustream_cb;
-
-// az_retusn write_ustream_to_flash(az_ulib_ustream stream, void* address)
-// {
-//   uint32_t ustream_buffer_size = 128;
-//   uint8_t ustream_buffer[128] = {0};
-//   az_result result;
-//   size_t size;
-//   do
-//   {
-//     result = az_ulib_ustream_read(ustram, ustream_buffer, sizeof(ustream_buffer), &size);
-//     if(result == AZ_OK)
-//     {
-//       /* Wrtie ustream_buffer/size to flash.*/
-
-//       /* address += size;*/
-//     }
-//   } while (result!= AZ_OK);
-//   if(result == AZ_ULIB_EOF)
-//   {
-//     result = AZ_OK;
-//   }
-//   return result;
-// }
+static az_blob_http_cb blob_http_cb;
+static az_ulib_ustream_data_cb ustream_data_cb; 
 
 static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host, void* address)
 {
   (void)address;
 
-  // nx
-  az_blob_ustream_interface blob_ustream_interface = &blob_ustream_cb;
-  HAL_StatusTypeDef hal_status;
-
   az_result result;
 
-  az_ulib_ustream_data_cb* data_cb;
   az_ulib_ustream ustream_instance;
-  uint32_t ustream_buffer_size = 128;
-  uint8_t ustream_buffer[128] = {0};
-  size_t returned_size;
-  
-  // if ((result = try_ustream()) != AZ_OK)
-  // {
-  //   printf("demo failed\r\n");
-  // }
 
-  // allocate memory for data control block
-  if ((data_cb = (az_ulib_ustream_data_cb*)malloc(sizeof(az_ulib_ustream_data_cb))) == NULL)
+  // create ustream_instance and blob client
+  if((result = create_ustream_from_blob(&ustream_instance, &ustream_data_cb, &blob_http_cb, ip, resource, host)) 
+    == AZ_OK)
   {
-    printf("Could not malloc data control block\r\n");
-  }
-
-  // create ustream and blob client
-  else if((result = create_ustream_from_blob(data_cb, &ustream_instance, ustream_buffer, ustream_buffer_size, 
-                                            blob_ustream_interface, ip, resource, host)) == AZ_OK)
-  {
-
-// wrtie_ustrem_to_flash(ustream_instance, address);
-
-    // calculate destination pointer
-    blob_ustream_interface->destination_ptr = (uint8_t*)(address);
-
-    // erase flash
-    if ((hal_status = internal_flash_erase((UCHAR*)address, ustream_instance.length)) == HAL_OK)
+    // use ustream_instance to write blob package to flash 
+    if ((result = write_ustream_to_flash(&ustream_instance, address)) != AZ_OK)
     {
-      // write first chunk to flash
-      if ((hal_status = internal_flash_write(blob_ustream_interface->destination_ptr, az_span_ptr(blob_ustream_interface->data), 
-          az_span_size(blob_ustream_interface->data))) == HAL_OK)
-      {
-        // if there are more chunks to store, loop over them until done
-        while (!blob_ustream_interface->download_complete)
-        {
-          // grab next chunk
-          if ((result = az_ulib_ustream_read(&ustream_instance, ustream_buffer, sizeof(ustream_buffer) - 1, &returned_size))
-              == AZ_OK)
-          {
-            // call store to flash
-            if ((hal_status = internal_flash_write(blob_ustream_interface->destination_ptr, az_span_ptr(blob_ustream_interface->data), 
-                az_span_size(blob_ustream_interface->data))) != HAL_OK)
-            {
-              break;
-            }
-          }
-        }
-      }
+      printf("Write ustream_instance to flash failed with result = (%0lx02)\r\n", result);
     }
 
-    result = ustream_blob_client_dispose(&ustream_instance, blob_ustream_interface->http_client_ptr, 
-                                          &blob_ustream_interface->packet_ptr);
+    // free up connection and ustream_instance resources
+    ustream_blob_client_dispose(&ustream_instance, blob_http_cb.http_client_ptr, 
+                                          &blob_http_cb.packet_ptr); // remove control block parameters
+  }
+  
+  else
+  {
+    printf("Create ustream_instance from bob failed with result = (%0lx02)\r\n", result);
   }
 
-  if (hal_status != HAL_OK)
-  {
-    return result_from_hal_status(hal_status);
-  }
   return result;
 }
 
