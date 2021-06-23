@@ -3,7 +3,7 @@
 // See LICENSE file in the project root for full license information.
 
 /********************************************************************
- * This code was auto-generated from key_vault v1 DL and shall not be
+ * This code was auto-generated from key_vault.1 DL and shall not be
  * modified.
  ********************************************************************/
 

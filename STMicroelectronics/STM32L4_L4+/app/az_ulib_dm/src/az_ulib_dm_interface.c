@@ -3,10 +3,8 @@
 // See LICENSE file in the project root for full license information.
 
 /********************************************************************
- * This code was auto-generated from dm v2 DL.
- *
- * Implement the code under the concrete functions.
- *
+ * This code was auto-generated from dm v1 DL and shall not be
+ * modified.
  ********************************************************************/
 
 #include "_az_ulib_dm_interface.h"
@@ -23,10 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-static az_result dm_1_install_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result dm_1_install_concrete(const dm_1_install_model_in* const in, az_ulib_model_out out)
 {
-  (void)model_out;
-  const dm_1_install_model_in* const in = (const dm_1_install_model_in* const)model_in;
+  (void)out;
   return az_ulib_dm_install(in->source_type, in->address, in->package_name);
 }
 
@@ -77,10 +74,11 @@ static az_result dm_1_install_span_wrapper(az_span model_in_span, az_span* model
   return AZ_ULIB_TRY_RESULT;
 }
 
-static az_result dm_1_uninstall_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result dm_1_uninstall_concrete(
+    const dm_1_uninstall_model_in* const in,
+    az_ulib_model_out out)
 {
-  (void)model_out;
-  const dm_1_uninstall_model_in* const in = (const dm_1_uninstall_model_in* const)model_in;
+  (void)out;
   return az_ulib_dm_uninstall(in->package_name);
 }
 

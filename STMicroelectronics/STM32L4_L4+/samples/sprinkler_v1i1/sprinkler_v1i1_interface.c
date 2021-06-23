@@ -3,10 +3,8 @@
 // See LICENSE file in the project root for full license information.
 
 /********************************************************************
- * This code was auto-generated from sprinkler v2 DL.
- *
- * Implement the code under the concrete functions.
- *
+ * This code was auto-generated from sprinkler.1 DL and shall not be
+ * modified.
  ********************************************************************/
 
 #include "az_ulib_capability_api.h"
@@ -24,12 +22,10 @@
 #include <string.h>
 
 static az_result sprinkler_1_water_now_concrete(
-    az_ulib_model_in model_in,
-    az_ulib_model_out model_out)
+    const sprinkler_1_water_now_model_in* const in,
+    az_ulib_model_out out)
 {
-  (void)model_out;
-  const sprinkler_1_water_now_model_in* const in
-      = (const sprinkler_1_water_now_model_in* const)model_in;
+  (void)out;
   return sprinkler_v1i1_water_now(in->area, in->timer);
 }
 
@@ -71,10 +67,11 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
   return AZ_ULIB_TRY_RESULT;
 }
 
-static az_result sprinkler_1_stop_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result sprinkler_1_stop_concrete(
+    const sprinkler_1_stop_model_in* const in,
+    az_ulib_model_out out)
 {
-  (void)model_in;
-  const sprinkler_1_stop_model_in* const in = (const sprinkler_1_stop_model_in* const)model_in;
+  (void)out;
   return sprinkler_v1i1_stop(in->area);
 }
 

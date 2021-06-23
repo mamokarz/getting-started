@@ -39,7 +39,7 @@ target_link_libraries(sprinkler_v1i1
 add_custom_command(TARGET sprinkler_v1i1 
     POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} ARGS -O binary 
-        ${CMAKE_CURRENT_LIST_DIR}/../../build/packages/sprinkler_v1i1/sprinkler_v1i1.elf
-        ${CMAKE_CURRENT_LIST_DIR}/../../build/packages/sprinkler_v1i1/sprinkler_v1i1.bin
+        ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/sprinkler_v1i1/sprinkler_v1i1.elf
+        ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/sprinkler_v1i1/sprinkler_v1i1.bin
     COMMENT "Converting the ELF output to a binary file"
 )

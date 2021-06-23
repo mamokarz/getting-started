@@ -3,10 +3,8 @@
 // See LICENSE file in the project root for full license information.
 
 /********************************************************************
- * This code was auto-generated from key_vault v1 DL.
- *
- * Implement the code under the concrete functions.
- *
+ * This code was auto-generated from key_vault.1 DL and shall not be
+ * modified.
  ********************************************************************/
 
 #include "az_ulib_capability_api.h"
@@ -24,12 +22,9 @@
 #include <string.h>
 
 static az_result key_vault_1_encrypt_concrete(
-    az_ulib_model_in model_in,
-    az_ulib_model_out model_out)
+    const key_vault_1_encrypt_model_in* const in,
+    key_vault_1_encrypt_model_out* out)
 {
-  const key_vault_1_encrypt_model_in* const in
-      = (const key_vault_1_encrypt_model_in* const)model_in;
-  key_vault_1_encrypt_model_out* out = (key_vault_1_encrypt_model_out*)model_out;
   return key_vault_v1i1_encrypt(in->algorithm, in->src, out->dest);
 }
 
@@ -86,12 +81,9 @@ static az_result key_vault_1_encrypt_span_wrapper(az_span model_in_span, az_span
 }
 
 static az_result key_vault_1_decrypt_concrete(
-    az_ulib_model_in model_in,
-    az_ulib_model_out model_out)
+    const key_vault_1_decrypt_model_in* const in,
+    key_vault_1_decrypt_model_out* out)
 {
-  const key_vault_1_decrypt_model_in* const in
-      = (const key_vault_1_decrypt_model_in* const)model_in;
-  key_vault_1_decrypt_model_out* out = (key_vault_1_decrypt_model_out*)model_out;
   return key_vault_v1i1_decrypt(in->src, out->dest);
 }
 
