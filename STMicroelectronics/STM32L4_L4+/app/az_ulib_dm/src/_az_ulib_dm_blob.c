@@ -143,12 +143,12 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status)
   }
 }
 
+static uint8_t local_buffer[256] = { 0 }; // define in BSS to reduce load on stack
 static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void* address)
 {
   az_result result;
   HAL_StatusTypeDef hal_status;
 
-  uint8_t local_buffer[1024] = {0};
   size_t returned_size = 0;
   
   if ((result = az_ulib_ustream_get_remaining_size(ustream_instance, &returned_size)) != AZ_OK)
@@ -168,7 +168,7 @@ static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void*
     do
     {
       // grab next buffer-full from ustream_instance
-      if((result = az_ulib_ustream_read(ustream_instance, local_buffer, sizeof(local_buffer), &returned_size)) == AZ_OK)
+      if ((result = az_ulib_ustream_read(ustream_instance, local_buffer, sizeof(local_buffer), &returned_size)) == AZ_OK) // should not use EOF
       {
         // write to flash if we have not reached the end of this chunk of data 
         if ((hal_status = internal_flash_write((uint8_t*)address, local_buffer, returned_size)) != HAL_OK)
@@ -176,7 +176,6 @@ static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void*
           printf("Internal flash write failed with hal_status = (%0x02)\r\n", hal_status);
           result = result_from_hal_status(hal_status);
         }
-
         // increment the write address by the last write-size
         address += returned_size;
       }

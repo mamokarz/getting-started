@@ -28,6 +28,7 @@ typedef struct az_blob_http_cb_tag
     NXD_ADDRESS* ip;
     CHAR* resource;
     CHAR* host;
+    bool last_chunk;
 } az_blob_http_cb;
 
 AZ_NODISCARD UINT blob_client_init(NXD_ADDRESS* ip, NX_WEB_HTTP_CLIENT* http_client, NX_PACKET* packet_ptr,
