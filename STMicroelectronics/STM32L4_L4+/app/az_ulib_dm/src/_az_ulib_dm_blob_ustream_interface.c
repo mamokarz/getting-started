@@ -76,31 +76,14 @@ static az_result concrete_set_position(az_ulib_ustream* ustream_instance, offset
 {
   _az_PRECONDITION(AZ_ULIB_USTREAM_IS_TYPE_OF(ustream_instance, api));
 
-  az_result result;
-
-  offset_t inner_position = position - ustream_instance->offset_diff;
-
-  if ((inner_position > (offset_t)(ustream_instance->length))
-      || (inner_position < ustream_instance->inner_first_valid_position))
-  {
-    result = AZ_ERROR_ITEM_NOT_FOUND;
-  }
-  else
-  {
-    ustream_instance->inner_current_position = inner_position;
-    result = AZ_OK;
-  }
-
-  return result;
+  return AZ_ERROR_ULIB_DISABLED;
 }
 
 static az_result concrete_reset(az_ulib_ustream* ustream_instance)
 {
   _az_PRECONDITION(AZ_ULIB_USTREAM_IS_TYPE_OF(ustream_instance, api));
 
-  ustream_instance->inner_current_position = ustream_instance->inner_first_valid_position;
-
-  return AZ_OK;
+  return AZ_ERROR_ULIB_DISABLED;
 }
 
 /*
@@ -224,31 +207,14 @@ static az_result concrete_get_position(az_ulib_ustream* ustream_instance, offset
   _az_PRECONDITION(AZ_ULIB_USTREAM_IS_TYPE_OF(ustream_instance, api));
   _az_PRECONDITION_NOT_NULL(position);
 
-  *position = ustream_instance->inner_current_position + ustream_instance->offset_diff;
-
-  return AZ_OK;
+  return AZ_ERROR_ULIB_DISABLED;
 }
 
 static az_result concrete_release(az_ulib_ustream* ustream_instance, offset_t position)
 {
   _az_PRECONDITION(AZ_ULIB_USTREAM_IS_TYPE_OF(ustream_instance, api));
 
-  az_result result;
-
-  offset_t inner_position = position - ustream_instance->offset_diff;
-
-  if ((inner_position >= ustream_instance->inner_current_position)
-      || (inner_position < ustream_instance->inner_first_valid_position))
-  {
-    result = AZ_ERROR_ARG;
-  }
-  else
-  {
-    ustream_instance->inner_first_valid_position = inner_position + (offset_t)1;
-    result = AZ_OK;
-  }
-
-  return result;
+  return AZ_ERROR_ULIB_DISABLED;
 }
 
 static az_result concrete_clone(
