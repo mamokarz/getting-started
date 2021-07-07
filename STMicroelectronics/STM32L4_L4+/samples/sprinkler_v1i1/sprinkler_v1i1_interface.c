@@ -107,6 +107,17 @@ static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* m
   return AZ_ULIB_TRY_RESULT;
 }
 
+static az_result sprinkler_v1i1_end(void)
+{
+  AZ_ULIB_TRY
+  {
+    // stop sprinkler
+    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_v1i1_stop(0));
+  }
+  AZ_ULIB_CATCH(...) {}
+
+  return AZ_ULIB_TRY_RESULT;
+}
 static const az_ulib_capability_descriptor SPRINKLER_1_CAPABILITIES[]
     = { AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
             SPRINKLER_1_WATER_NOW_COMMAND_NAME,
@@ -129,5 +140,19 @@ az_result publish_interface(const az_ulib_ipc_table* const table)
 
 az_result unpublish_interface(const az_ulib_ipc_table* const table)
 {
-  return table->unpublish(&SPRINKLER_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
+  /**
+   * @note: It is the user's responsibility to halt any processes that should not persist
+   *        beyond package uninstall.
+   */
+  AZ_ULIB_TRY
+  {
+    // end sprinkler operations
+    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_v1i1_end());
+
+    // unpublish interface
+    AZ_ULIB_THROW_IF_AZ_ERROR(table->unpublish(&SPRINKLER_1_DESCRIPTOR, AZ_ULIB_NO_WAIT));
+  }
+  AZ_ULIB_CATCH(...) {}
+
+  return AZ_ULIB_TRY_RESULT;
 }
