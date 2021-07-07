@@ -80,11 +80,16 @@ static void destroy_control_block(az_ulib_ustream_data_cb* control_block)
 
 static az_result concrete_set_position(az_ulib_ustream* ustream_instance, offset_t position)
 {
+  (void)ustream_instance;
+  (void)position;
+
   return AZ_ERROR_NOT_SUPPORTED;
 }
 
 static az_result concrete_reset(az_ulib_ustream* ustream_instance)
 {
+  (void)ustream_instance;
+
   return AZ_ERROR_NOT_SUPPORTED;
 }
 
@@ -95,7 +100,7 @@ static az_result concrete_read(
     size_t* const size)
 {
   _az_PRECONDITION(AZ_ULIB_USTREAM_IS_TYPE_OF(ustream_instance, api));
-  // _az_PRECONDITION_NOT_NULL(buffer);
+  _az_PRECONDITION_NOT_NULL(buffer);
   _az_PRECONDITION(buffer_length > 0);
   _az_PRECONDITION_NOT_NULL(size);
 
@@ -202,11 +207,17 @@ static az_result concrete_get_remaining_size(az_ulib_ustream* ustream_instance, 
 
 static az_result concrete_get_position(az_ulib_ustream* ustream_instance, offset_t* const position)
 {
+  (void)ustream_instance;
+  (void)position;
+
   return AZ_ERROR_NOT_SUPPORTED;
 }
 
 static az_result concrete_release(az_ulib_ustream* ustream_instance, offset_t position)
 {
+  (void)ustream_instance;
+  (void)position;
+
   return AZ_OK;
 }
 
@@ -215,6 +226,10 @@ static az_result concrete_clone(
     az_ulib_ustream* ustream_instance,
     offset_t offset)
 {
+  (void)ustream_instance_clone;
+  (void)ustream_instance;
+  (void)offset;
+
   return AZ_ERROR_NOT_SUPPORTED;
 }
 
@@ -269,8 +284,8 @@ AZ_NODISCARD az_result az_blob_create_ustream_from_blob(
   _az_PRECONDITION_NOT_NULL(ustream_data_cb);
   _az_PRECONDITION_NOT_NULL(blob_http_cb);
   _az_PRECONDITION_NOT_NULL(ip);
-  _az_PRECONDITION(sizeof(resource) > 0);
-  _az_PRECONDITION(sizeof(host) > 0);
+  _az_PRECONDITION(strlen((char*)resource) > 0);
+  _az_PRECONDITION(strlen((char*)host) > 0);
 
   AZ_ULIB_TRY
   {

@@ -9,7 +9,9 @@
 #include "az_ulib_ustream.h"
 #include "nx_api.h"
 #include "nx_web_http_client.h"
-#include "stdbool.h"
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
 
 #include "azure/core/_az_cfg_prefix.h"
 
@@ -65,8 +67,9 @@ typedef struct az_blob_http_cb_tag
  * @param[in]   ustream_data_cb_release_callback  The #az_ulib_release_callback function signature 
  *                                                to release the ustream control block.
  * @param[in]   ip                                The #NXD_ADDRESS* server ip address.
- * @param[in]   resource                          The `int8_t*` blob resource string.
- * @param[in]   host                              The `int8_t*` blob storage host string.
+ * @param[in]   resource                          The `int8_t*` blob resource /0 terminated string.
+ * @param[in]   host                              The `int8_t*` blob storage host /0 terminated 
+ *                                                string.
  *
  * @pre         \p ustream_instance               shall not be `NULL`.
  * @pre         \p ustream_data_cb                shall not be `NULL`.
