@@ -3,7 +3,7 @@
 // See LICENSE file in the project root for full license information.
 
 #include "_az_ulib_dm_blob.h"
-#include "_az_ulib_dm_blob_ustream_interface.h"
+#include "az_ulib_dm_blob_ustream_interface.h"
 #include "az_ulib_result.h"
 #include "az_ulib_ustream.h"
 #include "azure/az_core.h"
@@ -11,10 +11,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// #define USER_BUFFER_SIZE 5
-// #define SPLIT_POSITION 12
-
-// static const char USTREAM_ONE_STRING[] = "Split BeforeSplit After";
+// TODO: Move to gateway
+#include "stm_networking.h"
 
 static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* slice)
 {
@@ -90,6 +88,7 @@ static az_result split_url(
   return AZ_OK;
 }
 
+// TODO: Move to gateway
 static az_result get_ip_from_uri(az_span uri, NXD_ADDRESS* ip)
 {
   AZ_ULIB_TRY
@@ -142,13 +141,13 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status)
   }
 }
 
-static uint8_t local_buffer[256] = { 0 }; // define in BSS to reduce load on stack
 static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void* address)
 {
   az_result result;
   HAL_StatusTypeDef hal_status;
 
   size_t returned_size = 0;
+  static uint8_t local_buffer[256] = { 0 };
 
   if ((result = az_ulib_ustream_get_remaining_size(ustream_instance, &returned_size)) == AZ_OK)
   {
@@ -165,7 +164,7 @@ static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void*
       {
         // grab next buffer-full from ustream_instance
         if ((result = az_ulib_ustream_read(
-                ustream_instance, local_buffer, sizeof(local_buffer), &returned_size))
+                 ustream_instance, local_buffer, sizeof(local_buffer), &returned_size))
             == AZ_OK) // should not use EOF
         {
           // write to flash if we have not reached the end of this chunk of data
@@ -186,8 +185,6 @@ static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void*
     }
   }
 
-  
-
   return result;
 }
 
@@ -203,14 +200,21 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
     az_ulib_ustream_data_cb ustream_data_cb;
 
     // create ustream_instance and blob client
-    AZ_ULIB_THROW_IF_AZ_ERROR(create_ustream_from_blob(
-            &ustream_instance, &ustream_data_cb, &blob_http_cb, ip, resource, host, NULL, NULL));
-    
+    AZ_ULIB_THROW_IF_AZ_ERROR(az_blob_create_ustream_from_blob(
+        &ustream_instance,
+        &ustream_data_cb,
+        NULL,
+        &blob_http_cb,
+        NULL,
+        ip,
+        (int8_t*)resource,
+        (int8_t*)host));
+
     // use ustream_instance to write blob package to flash
     AZ_ULIB_THROW_IF_AZ_ERROR(write_ustream_to_flash(&ustream_instance, address));
 
     // free up connection and ustream_instance resources
-    AZ_ULIB_THROW_IF_AZ_ERROR(ustream_blob_client_dispose(&ustream_instance));
+    AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ustream_dispose(&ustream_instance));
   }
   AZ_ULIB_CATCH(...) {}
 
