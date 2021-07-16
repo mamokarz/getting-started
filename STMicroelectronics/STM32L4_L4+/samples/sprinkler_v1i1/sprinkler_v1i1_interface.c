@@ -129,6 +129,8 @@ static const az_ulib_capability_descriptor SPRINKLER_1_CAPABILITIES[]
             sprinkler_1_stop_span_wrapper) };
 
 static const az_ulib_interface_descriptor SPRINKLER_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
+    SPRINKLER_1_PACKAGE_NAME,
+    SPRINKLER_1_PACKAGE_VERSION,
     SPRINKLER_1_INTERFACE_NAME,
     SPRINKLER_1_INTERFACE_VERSION,
     SPRINKLER_1_CAPABILITIES);

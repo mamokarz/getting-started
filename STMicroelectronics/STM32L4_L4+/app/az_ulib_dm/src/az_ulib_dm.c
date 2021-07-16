@@ -11,7 +11,7 @@
 #include "az_ulib_port.h"
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
-#include "dm_1_model.h"
+#include "packages_1_model.h"
 #include <azure/core/internal/az_precondition_internal.h>
 #include <string.h>
 
@@ -140,7 +140,7 @@ static az_result install_from_cli(void* base_address, az_span package_name)
 }
 
 AZ_NODISCARD az_result
-az_ulib_dm_install(dm_1_source_type source_type, void* base_address, az_span package_name)
+az_ulib_dm_install(packages_1_source_type source_type, void* base_address, az_span package_name)
 {
   _az_PRECONDITION_NOT_NULL(_az_dm_cb);
   az_result result;
@@ -149,13 +149,13 @@ az_ulib_dm_install(dm_1_source_type source_type, void* base_address, az_span pac
   {
     switch (source_type)
     {
-      case DM_1_SOURCE_TYPE_IN_MEMORY:
+      case PACKAGES_1_SOURCE_TYPE_IN_MEMORY:
         result = install_in_memory(base_address, package_name);
         break;
-      case DM_1_SOURCE_TYPE_BLOB:
+      case PACKAGES_1_SOURCE_TYPE_BLOB:
         result = install_from_blob(base_address, package_name);
         break;
-      case DM_1_SOURCE_TYPE_CLI:
+      case PACKAGES_1_SOURCE_TYPE_CLI:
         result = install_from_cli(base_address, package_name);
         break;
       default:

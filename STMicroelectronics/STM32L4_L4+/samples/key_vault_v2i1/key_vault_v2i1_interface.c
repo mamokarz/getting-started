@@ -13,7 +13,7 @@
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
 #include "cipher_1_model.h"
-#include "key_vault_v1i1.h"
+#include "key_vault_v2i1.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -25,7 +25,7 @@ static az_result cipher_1_encrypt_concrete(
     const cipher_1_encrypt_model_in* const in,
     cipher_1_encrypt_model_out* out)
 {
-  return key_vault_1_cipher_1_encrypt(in->algorithm, in->src, out->dest);
+  return key_vault_2_cipher_1_encrypt(in->algorithm, in->src, out->dest);
 }
 
 static az_result cipher_1_encrypt_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -82,7 +82,7 @@ static az_result cipher_1_decrypt_concrete(
     const cipher_1_decrypt_model_in* const in,
     cipher_1_decrypt_model_out* out)
 {
-  return key_vault_1_cipher_1_decrypt(in->src, out->dest);
+  return key_vault_2_cipher_1_decrypt(in->src, out->dest);
 }
 
 static az_result cipher_1_decrypt_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -141,8 +141,8 @@ static const az_ulib_capability_descriptor CIPHER_1_CAPABILITIES[]
             cipher_1_decrypt_span_wrapper) };
 
 static const az_ulib_interface_descriptor CIPHER_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
-    KEY_VAULT_1_PACKAGE_NAME,
-    KEY_VAULT_1_PACKAGE_VERSION,
+    KEY_VAULT_2_PACKAGE_NAME,
+    KEY_VAULT_2_PACKAGE_VERSION,
     CIPHER_1_INTERFACE_NAME,
     CIPHER_1_INTERFACE_VERSION,
     CIPHER_1_CAPABILITIES);
