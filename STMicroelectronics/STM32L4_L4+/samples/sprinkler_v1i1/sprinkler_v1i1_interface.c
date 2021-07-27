@@ -3,10 +3,8 @@
 // See LICENSE file in the project root for full license information.
 
 /********************************************************************
- * This code was auto-generated from sprinkler v2 DL.
- *
- * Implement the code under the concrete functions.
- *
+ * This code was auto-generated from sprinkler.1 DL and shall not be
+ * modified.
  ********************************************************************/
 
 #include "az_ulib_capability_api.h"
@@ -24,12 +22,10 @@
 #include <string.h>
 
 static az_result sprinkler_1_water_now_concrete(
-    az_ulib_model_in model_in,
-    az_ulib_model_out model_out)
+    const sprinkler_1_water_now_model_in* const in,
+    az_ulib_model_out out)
 {
-  (void)model_out;
-  const sprinkler_1_water_now_model_in* const in
-      = (const sprinkler_1_water_now_model_in* const)model_in;
+  (void)out;
   return sprinkler_v1i1_water_now(in->area, in->timer);
 }
 
@@ -71,10 +67,11 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
   return AZ_ULIB_TRY_RESULT;
 }
 
-static az_result sprinkler_1_stop_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result sprinkler_1_stop_concrete(
+    const sprinkler_1_stop_model_in* const in,
+    az_ulib_model_out out)
 {
-  (void)model_in;
-  const sprinkler_1_stop_model_in* const in = (const sprinkler_1_stop_model_in* const)model_in;
+  (void)out;
   return sprinkler_v1i1_stop(in->area);
 }
 
@@ -110,6 +107,17 @@ static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* m
   return AZ_ULIB_TRY_RESULT;
 }
 
+static az_result sprinkler_v1i1_end(void)
+{
+  AZ_ULIB_TRY
+  {
+    // stop sprinkler
+    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_v1i1_stop(0));
+  }
+  AZ_ULIB_CATCH(...) {}
+
+  return AZ_ULIB_TRY_RESULT;
+}
 static const az_ulib_capability_descriptor SPRINKLER_1_CAPABILITIES[]
     = { AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
             SPRINKLER_1_WATER_NOW_COMMAND_NAME,
@@ -121,6 +129,8 @@ static const az_ulib_capability_descriptor SPRINKLER_1_CAPABILITIES[]
             sprinkler_1_stop_span_wrapper) };
 
 static const az_ulib_interface_descriptor SPRINKLER_1_DESCRIPTOR = AZ_ULIB_DESCRIPTOR_CREATE(
+    SPRINKLER_1_PACKAGE_NAME,
+    SPRINKLER_1_PACKAGE_VERSION,
     SPRINKLER_1_INTERFACE_NAME,
     SPRINKLER_1_INTERFACE_VERSION,
     SPRINKLER_1_CAPABILITIES);
@@ -132,5 +142,19 @@ az_result publish_interface(const az_ulib_ipc_table* const table)
 
 az_result unpublish_interface(const az_ulib_ipc_table* const table)
 {
-  return table->unpublish(&SPRINKLER_1_DESCRIPTOR, AZ_ULIB_NO_WAIT);
+  /**
+   * @note: It is the user's responsibility to halt any processes that should not persist
+   *        beyond package uninstall.
+   */
+  AZ_ULIB_TRY
+  {
+    // end sprinkler operations
+    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_v1i1_end());
+
+    // unpublish interface
+    AZ_ULIB_THROW_IF_AZ_ERROR(table->unpublish(&SPRINKLER_1_DESCRIPTOR, AZ_ULIB_NO_WAIT));
+  }
+  AZ_ULIB_CATCH(...) {}
+
+  return AZ_ULIB_TRY_RESULT;
 }

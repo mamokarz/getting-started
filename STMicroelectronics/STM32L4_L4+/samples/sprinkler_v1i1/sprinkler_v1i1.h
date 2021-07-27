@@ -2,8 +2,8 @@
 // Licensed under the MIT license.
 // See LICENSE file in the project root for full license information.
 
-#ifndef KEY_VAULT_V1I1_H
-#define KEY_VAULT_V1I1_H
+#ifndef SPRINKLER_V1I1_H
+#define SPRINKLER_V1I1_H
 
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
@@ -16,12 +16,15 @@ extern "C"
 #include <stdint.h>
 #endif
 
-  az_result key_vault_v1i1_encrypt(uint32_t algorithm, az_span src, az_span* dest);
+#define SPRINKLER_1_PACKAGE_NAME "sprinkler"
+#define SPRINKLER_1_PACKAGE_VERSION 1
 
-  az_result key_vault_v1i1_decrypt(az_span src, az_span* dest);
+  az_result sprinkler_v1i1_water_now(int32_t area, int32_t timer);
+
+  az_result sprinkler_v1i1_stop(int32_t area);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* KEY_VAULT_V1I1_H */
+#endif /* SPRINKLER_V1I1_H */

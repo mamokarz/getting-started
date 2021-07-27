@@ -4,10 +4,10 @@ The following steps create a new package to be installed in the device. This pac
 
 ### Infrastructure
 
-Create a new directory called sprinkler_v2i1 inside of the directory "packages".
+Create a new directory called sprinkler_v2i1 inside of the directory "samples".
 
 ```bash
-cd packages
+cd samples
 mkdir sprinkler_v2i1
 cd sprinkler_v2i1
 ```
@@ -126,12 +126,10 @@ Create a file called sprinkler_v2i1_interface.c with the following content in th
 #include <string.h>
 
 static az_result sprinkler_1_water_now_concrete(
-    az_ulib_model_in model_in,
-    az_ulib_model_out model_out)
+    const sprinkler_1_water_now_model_in* const in,
+    az_ulib_model_out out)
 {
-  (void)model_out;
-  const sprinkler_1_water_now_model_in* const in
-      = (const sprinkler_1_water_now_model_in* const)model_in;
+  (void)out;
   return sprinkler_v2i1_water_now(in->area, in->timer);
 }
 
@@ -173,10 +171,11 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
   return AZ_ULIB_TRY_RESULT;
 }
 
-static az_result sprinkler_1_stop_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result sprinkler_1_stop_concrete(
+    const sprinkler_1_stop_model_in* const in, 
+    az_ulib_model_out out)
 {
-  (void)model_in;
-  const sprinkler_1_stop_model_in* const in = (const sprinkler_1_stop_model_in* const)model_in;
+  (void)out;
   return sprinkler_v2i1_stop(in->area);
 }
 
@@ -244,12 +243,10 @@ For example, in the `sprinkler_1_water_now_concrete`, the business logic in impl
 
 ```c
 static az_result sprinkler_1_water_now_concrete(
-    az_ulib_model_in model_in,
-    az_ulib_model_out model_out)
+    const sprinkler_1_water_now_model_in* const in,
+    az_ulib_model_out out)
 {
-  (void)model_out;
-  const sprinkler_1_water_now_model_in* const in
-      = (const sprinkler_1_water_now_model_in* const)model_in;
+  (void)out;
   return sprinkler_v2i1_water_now(in->area, in->timer);
 }
 ```
@@ -407,13 +404,13 @@ target_link_libraries(sprinkler_v2i1
 add_custom_command(TARGET sprinkler_v2i1 
     POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} ARGS -O binary 
-        ${CMAKE_CURRENT_LIST_DIR}/../../build/packages/sprinkler_v2i1/sprinkler_v2i1.elf
-        ${CMAKE_CURRENT_LIST_DIR}/../../build/packages/sprinkler_v2i1/sprinkler_v2i1.bin
+        ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/sprinkler_v2i1/sprinkler_v2i1.elf
+        ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/sprinkler_v2i1/sprinkler_v2i1.bin
     COMMENT "Converting the ELF output to a binary file"
 )
 ```
 
-An add `add_subdirectory(sprinkler_v2i1)` in the packages/CMakeLists.txt.
+An add `add_subdirectory(sprinkler_v2i1)` in the samples/CMakeLists.txt.
 
 At this point, your sprinkler_v2i1 project tree shall looks like:
 ```
@@ -440,11 +437,11 @@ Sprinkler_v1i1.elf contains the binary code to run in the MCU together with a fe
 To build the project, call again ".\tools\rebuild.bat". It will build the entire project creating 4 executables, including the new sprinkler_v2i1.elf
 
 ```
-[923/931] Linking C executable packages\key_vault_v1i1\key_vault_v1i1.elf
+[923/931] Linking C executable samples\key_vault_v1i1\key_vault_v1i1.elf
 Memory region         Used Size  Region Size  %age Used
            FLASH:          0 GB      28671 B      0.00%
              RAM:          0 GB         0 GB     -1.#J%
-[925/931] Linking C executable packages\sprinkler_v2i1\sprinkler_v2i1.elf
+[925/931] Linking C executable samples\sprinkler_v2i1\sprinkler_v2i1.elf
 Memory region         Used Size  Region Size  %age Used
            FLASH:          0 GB      28671 B      0.00%
              RAM:          0 GB         0 GB     -1.#J%
@@ -459,7 +456,7 @@ Memory region         Used Size  Region Size  %age Used
            FLASH:      284192 B         2 MB     13.55%
 ```
 
-You can check the generated files at "/build/packages/sprinkler_v2i1", there you will find sprinkler_v2i1.elf and the sprinkler_v2i1.bin that is the binary to upload to the MCU. 
+You can check the generated files at "/build/samples/sprinkler_v2i1", there you will find sprinkler_v2i1.elf and the sprinkler_v2i1.bin that is the binary to upload to the MCU. 
 
 ## Upload Binary to MCU Flash
 
@@ -468,8 +465,8 @@ You can check the generated files at "/build/packages/sprinkler_v2i1", there you
 To upload this code to the MCU, you can use, for example, GDB commands, it is important to remember that the code was build to the address 0x08057000.
 
 ```
-restore build/packages/sprinkler_v2i1/sprinkler_v2i1.bin binary 0x08057000
-add-symbol-file build/packages/sprinkler_v2i1/sprinkler_v2i1.elf 0x08057080
+restore build/samples/sprinkler_v2i1/sprinkler_v2i1.bin binary 0x08057000
+add-symbol-file build/samples/sprinkler_v2i1/sprinkler_v2i1.elf 0x08057080
 ```
 
 ### STM32 ST-Link Utility

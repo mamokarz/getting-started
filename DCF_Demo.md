@@ -19,7 +19,7 @@ Device Manager current support install code from 4 different sources.
 Install an **In Memory** package assume that the binary is already in the MCU memory when the install command arrives. The main goal of this installation is to debug package's code. 
 If properly configured, all debug tools applicable to a code built in the OS can be equally applied to a package using the DCF in memory installation.
 
-The current example produces the key_vault_v1i1 and sprinkler_v1i1 packages. The CMake will create the key_vault_v1i1.elf and key_vault_v1i1.bin for key_vault_v1i1 package in ".\build\packages\key_vault_v1i1" directory, and sprinkler_v1i1.elf and sprinkler_v1i1.bin for sprinkler_v1i1 package in ".\build\packages\sprinkler_v1i1" directory. 
+The current example produces the key_vault_v1i1 and sprinkler_v1i1 packages. The CMake will create the key_vault_v1i1.elf and key_vault_v1i1.bin for key_vault_v1i1 package in ".\build\samples\key_vault_v1i1" directory, and sprinkler_v1i1.elf and sprinkler_v1i1.bin for sprinkler_v1i1 package in ".\build\samples\sprinkler_v1i1" directory. 
 
 For now, both packages were created to run in a specific memory address, key_vault_v1i1 shall be installed in the address 0x08050000, and sprinkler_v1i1 in the address 0x08057000.
 
@@ -34,11 +34,11 @@ Here are two ways to upload the binary to the MCU flash. Both examples use key_v
 One of the ways to upload the binary file is to use GDB commands.
 
 ```
-restore build/packages/key_vault_v1i1/key_vault_v1i1.bin binary 0x08050000
+restore build/samples/key_vault_v1i1/key_vault_v1i1.bin binary 0x08050000
 ```
 and, if you are using GDB to debug your code, you can add the symbols as well. 
 ```
-add-symbol-file build/packages/key_vault_v1i1/key_vault_v1i1.elf 0x08050080
+add-symbol-file build/samples/key_vault_v1i1/key_vault_v1i1.elf 0x08050080
 ```
 
 Because you have the symbol attached to the code, you can now debug your package's code using any GDB tools, including breakpoints and variable inspections. 
@@ -57,7 +57,7 @@ Because you have the symbol attached to the code, you can now debug your package
 
 - Plug the STM32 dev board to your machine. 
 - Use the `Connect to the target` button to connect to your dev board and you should be able to see the content of the memory address '0x08050000'. 
-- Click the `Binary File` tab and locate the `build/packages/key_vault_v1i1/key_vault_v1i1.bin` file. 
+- Click the `Binary File` tab and locate the `build/samples/key_vault_v1i1/key_vault_v1i1.bin` file. 
 
 ![ST_Link_utility2](STMicroelectronics/STM32L4_L4+/media/STLink2.PNG)
 
@@ -331,7 +331,7 @@ Upload your binary to the `packages` container
 
   1. Click in the new `packages` container to open it.
   2. Select the `Upload` button.
-  3. In the left part of the Portal, find *sprinkler_v1i1.bin* in the directory ".\build\packages\sprinkler_v1i1".
+  3. In the left part of the Portal, find *sprinkler_v1i1.bin* in the directory ".\build\samples\sprinkler_v1i1".
   4. Select `Upload` to upload the file.
 
 ![AZ_BLOB_UPLOAD_FILE](STMicroelectronics/STM32L4_L4+/media/azure_blob_upload_file.png)

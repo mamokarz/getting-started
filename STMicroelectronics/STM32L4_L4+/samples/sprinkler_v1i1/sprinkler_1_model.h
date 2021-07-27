@@ -3,7 +3,7 @@
 // See LICENSE file in the project root for full license information.
 
 /********************************************************************
- * This code was auto-generated from sprinkler v1 DL and shall not be
+ * This code was auto-generated from sprinkler.1 DL and shall not be
  * modified.
  ********************************************************************/
 

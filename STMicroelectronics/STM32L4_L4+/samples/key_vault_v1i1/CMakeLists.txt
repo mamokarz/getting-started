@@ -38,7 +38,7 @@ target_link_libraries(key_vault_v1i1
 add_custom_command(TARGET key_vault_v1i1 
     POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} ARGS -O binary 
-        ${CMAKE_CURRENT_LIST_DIR}/../../build/packages/key_vault_v1i1/key_vault_v1i1.elf
-        ${CMAKE_CURRENT_LIST_DIR}/../../build/packages/key_vault_v1i1/key_vault_v1i1.bin
+        ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/key_vault_v1i1/key_vault_v1i1.elf
+        ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/key_vault_v1i1/key_vault_v1i1.bin
     COMMENT "Converting the ELF output to a binary file"
 )

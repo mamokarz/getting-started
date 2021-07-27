@@ -4,13 +4,14 @@
 
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
-#include "key_vault_v1i1.h"
+#include "key_vault_v2i1.h"
 #include <inttypes.h>
 #include <stdint.h>
 
-#define NUMBER_OF_KEYS 1
+#define NUMBER_OF_KEYS 2
 #define KEY_SIZE 21
-static const char key[NUMBER_OF_KEYS][KEY_SIZE] = { "12345678912345678901" };
+static const uint8_t key[NUMBER_OF_KEYS][KEY_SIZE]
+    = { "12345678912345678901", "h948kfd--fsd{jfh}l2D" };
 
 #define splitInt(intVal, bytePos) (char)((intVal >> (bytePos << 3)) & 0xFF)
 #define joinChars(a, b, c, d) \
@@ -141,7 +142,7 @@ static size_t numberOfBase64Characters(const char* encodedString)
   return length;
 }
 
-az_result key_vault_v1i1_encrypt(uint32_t algorithm, az_span src, az_span* dest)
+az_result key_vault_2_cipher_1_encrypt(uint32_t algorithm, az_span src, az_span* dest)
 {
   AZ_ULIB_TRY
   {
@@ -211,7 +212,7 @@ az_result key_vault_v1i1_encrypt(uint32_t algorithm, az_span src, az_span* dest)
   return AZ_OK;
 }
 
-az_result key_vault_v1i1_decrypt(az_span src, az_span* dest)
+az_result key_vault_2_cipher_1_decrypt(az_span src, az_span* dest)
 {
   AZ_ULIB_TRY
   {
