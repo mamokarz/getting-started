@@ -31,17 +31,21 @@ extern "C"
 /*
  * Define get with key command on registry editor interface.
  */
-#define REGISTRY_1_GET_VALUE_COMMAND (az_ulib_capability_index)0
-#define REGISTRY_1_GET_VALUE_COMMAND_NAME "get_value"
-#define REGISTRY_1_GET_VALUE_REGISTRY_KEY_NAME "registry_key"
+#define REGISTRY_1_GET_COMMAND (az_ulib_capability_index)0
+#define REGISTRY_1_GET_COMMAND_NAME "get"
+#define REGISTRY_1_GET_REGISTRY_KEY_NAME "registry_key"
+#define REGISTRY_1_GET_REGISTRY_VALUE_NAME "registry_value"
   typedef struct
   {
     az_span registry_key;
-    az_span registry_value;
   } registry_1_get_model_in;
+  typedef struct
+  {
+    az_span* registry_value;
+  } registry_1_get_model_out;
 
 /*
- * Define get with key command on registry editor interface.
+ * Define add command on registry editor interface.
  */
 #define REGISTRY_1_ADD_COMMAND (az_ulib_capability_index)1
 #define REGISTRY_1_ADD_COMMAND_NAME "add"
@@ -53,8 +57,20 @@ extern "C"
     az_span new_value;
   } registry_1_add_model_in;
 
+/*
+ * Define delete with key command on registry editor interface.
+ */
+#define REGISTRY_1_DELETE_COMMAND (az_ulib_capability_index)2
+#define REGISTRY_1_DELETE_COMMAND_NAME "delete"
+#define REGISTRY_1_DELETE_REGISTRY_KEY_NAME "registry_key"
+  typedef struct
+  {
+    az_span registry_key;
+  } registry_1_delete_model_in;
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* DM_1_MODEL_H */
+#endif /* REGISTRY_1_MODEL_H */
+

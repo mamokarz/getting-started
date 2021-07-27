@@ -13,15 +13,11 @@
 #define FLASH_BANK2_ADDR                (FLASH_BASE + FLASH_BANK_SIZE)
 
 /* Define the internal variables.  */
-static uint32_t total_write_size;
-static uint32_t write_size;
 static union 
 {
     uint64_t write_buffer_int64;
     unsigned char write_buffer_char[8];
 }write_buffer;
-
-static int remainder_count;
 
 /* Write firmware into internal flash.  */
 HAL_StatusTypeDef internal_flash_write(
@@ -29,33 +25,10 @@ HAL_StatusTypeDef internal_flash_write(
     unsigned char* source_ptr, 
     uint32_t size)
 {
-
-HAL_StatusTypeDef       status;
-
-
-    write_size += size;
-    
-    for (; (remainder_count >= 0) && (remainder_count < 8) && (size > 0); destination_ptr++, size--)
-    {
-        write_buffer.write_buffer_char[remainder_count++] = *source_ptr++;
-    }
+    int remainder_count = 0;
+    HAL_StatusTypeDef       status;
     
     HAL_FLASH_Unlock();
-    
-    // definitely will be 8 but destination pointer has been increased by 8 for unknown reason and 
-    // now we are taking it off. 
-    // write the first write buffer int64 into flash
-    if (remainder_count == 8)
-    {
-        status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, 
-                                (uint32_t)(destination_ptr - 8), write_buffer.write_buffer_int64); 
-        if (status != HAL_OK)
-        {
-            HAL_FLASH_Lock();
-            return status;
-        }
-        remainder_count = -1;
-    }
 
     for (; size > 8; size -= 8, destination_ptr += 8, source_ptr += 8)
     {
@@ -78,7 +51,7 @@ HAL_StatusTypeDef       status;
         write_buffer.write_buffer_char[remainder_count++] = *source_ptr++;
         destination_ptr++;
     }
-    if ((remainder_count >= 0) && (write_size >= total_write_size))
+    if ((remainder_count >= 0))
     {
         while (remainder_count < 8)
         {
@@ -139,12 +112,7 @@ HAL_StatusTypeDef internal_flash_erase(unsigned char* destination_ptr, uint32_t 
 	
 	// Lock flash
 	HAL_FLASH_OB_Lock();
-	HAL_FLASH_Lock();		
-
-    // set internal variable
-    total_write_size = size;
-    remainder_count = -1;
-    write_size = 0;
+	HAL_FLASH_Lock();
 	
 	return status;
 }

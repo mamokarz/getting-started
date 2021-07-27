@@ -5,6 +5,7 @@
 #include "_az_ulib_dm_blob.h"
 #include "_az_ulib_dm_interface.h"
 #include "az_ulib_dm_api.h"
+#include "az_ulib_registry_api.h"
 #include "az_ulib_ipc_api.h"
 #include "az_ulib_ipc_interface.h"
 #include "az_ulib_pal_os_api.h"
@@ -69,7 +70,29 @@ AZ_NODISCARD az_result az_ulib_dm_init(az_ulib_dm* dm_handle)
     az_span_fill(package->name, '\0');
   }
 
-  return _az_ulib_dm_interface_publish();
+  az_result result;
+
+  // Initialize device registry
+  result = az_ulib_registry_init();
+
+  // test add to registry
+  az_span key = az_span_create_from_str("samplekey1samplekey1samplekey1samplekey1samplekey1samplekey1samplekey1samplekey1samplekey1samplekey1samplekey1samplekey1samplekey1samplekey1samp");
+  az_span value = az_span_create_from_str("samplevalue1samplevalue1samplevalue1samplevalue1samplevalue1samplevalue1samplevalue1samplevalue1samplevalue1samplevalue1samplevalue1samplevalue1samplevalue1");
+
+  result = az_ulib_registry_add(key, value);
+
+  az_span key2 = az_span_create_from_str("samplekey1");
+  az_span value2 = az_span_create_from_str("samplevalue1");
+
+  result = az_ulib_registry_add(key2, value2);
+
+  az_span reg_key = az_span_create_from_str("samplekey1");
+  az_span reg_value;
+  result = az_ulib_registry_get(reg_key, &reg_value);
+
+  result =_az_ulib_dm_interface_publish();
+
+  return result;
 }
 
 AZ_NODISCARD az_result az_ulib_dm_deinit(void)

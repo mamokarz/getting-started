@@ -12,6 +12,8 @@ extern "C"
 {
 #endif
 
+void internal_flash_init();
+
 HAL_StatusTypeDef internal_flash_write(
     unsigned char* destination_ptr, unsigned char* source_ptr, uint32_t size);
     
