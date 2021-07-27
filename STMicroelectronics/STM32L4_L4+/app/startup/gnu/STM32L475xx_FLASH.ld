@@ -47,8 +47,14 @@ MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 96K
 RAM2 (xrw)      : ORIGIN = 0x10000000, LENGTH = 32K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 1024K
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 1020K
+REGISTRYINFO (rx)      : ORIGIN = 0x80FD800, LENGTH = 2K
+REGISTRY (rx)      : ORIGIN = 0x80FF000, LENGTH = 4K
 }
+
+/* Custom address to be accessed from user C code */
+__REGISTRY = ORIGIN(REGISTRY);
+__REGISTRYINFO = ORIGIN(REGISTRYINFO);
 
 /* Define output sections */
 SECTIONS

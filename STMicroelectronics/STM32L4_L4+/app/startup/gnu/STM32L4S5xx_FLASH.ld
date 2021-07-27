@@ -64,8 +64,14 @@ __RAM_segment_used_end__ = 0;
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 640K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 2048K
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 2044K
+REGISTRYINFO (rx)      : ORIGIN = 0x80FD800, LENGTH = 2K
+REGISTRY (rx)      : ORIGIN = 0x80FF000, LENGTH = 4K
 }
+
+/* Custom address to be accessed from user C code */
+__REGISTRY = ORIGIN(REGISTRY);
+__REGISTRYINFO = ORIGIN(REGISTRYINFO);
 
 /* Define output sections */
 SECTIONS
