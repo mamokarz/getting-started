@@ -18,6 +18,9 @@ extern "C"
 #else
 #endif
 
+#define REGISTRY_1_PACKAGE_NAME "registry"
+#define REGISTRY_1_PACKAGE_VERSION 1
+
   /*
    * Publish Registry Editor interface.
    */
