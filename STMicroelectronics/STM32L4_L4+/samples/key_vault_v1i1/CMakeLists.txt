@@ -26,13 +26,17 @@ target_include_directories(key_vault_v1i1
     ${CMAKE_CURRENT_LIST_DIR}
 )
 
+target_compile_options(key_vault_v1i1
+    PRIVATE
+        -fpie -fno-plt -fno-jump-tables ${PIC_FLAGS})
+
 target_link_options(key_vault_v1i1
     PRIVATE 
-        -T${CMAKE_CURRENT_LIST_DIR}/startup/gnu/STM32L475xx_FLASH.ld -Wl,-Map=key_vault_v1i1.map)
+        -T${CMAKE_CURRENT_LIST_DIR}/startup/gnu/STM32L475xx_FLASH.ld -pie -Wl,-Map=key_vault_v1i1.map)
 
 target_link_libraries(key_vault_v1i1
   az::ulib
-  az::core
+  az::core_pic
 )
 
 add_custom_command(TARGET key_vault_v1i1 

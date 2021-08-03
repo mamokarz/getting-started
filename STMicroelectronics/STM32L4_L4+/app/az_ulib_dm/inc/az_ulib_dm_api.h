@@ -30,13 +30,16 @@
 #define AZ_ULIB_CONFIG_MAX_DM_PACKAGES 5
 #define AZ_ULIB_CONFIG_MAX_DM_PACKAGE_NAME 32
 
+#define AZ_ULIB_DM_PACKAGE_SHELL_ENTRY_POINT 6
 #define AZ_ULIB_DM_PACKAGE_PUBLISH 16
 #define AZ_ULIB_DM_PACKAGE_UNPUBLISH 17
+#define AZ_ULIB_DM_PACKAGE_MAX_DATA_SIZE 256
 
 typedef struct
 {
   az_span name;
   uint8_t name_buf[AZ_ULIB_CONFIG_MAX_DM_PACKAGE_NAME];
+  uint8_t data[AZ_ULIB_DM_PACKAGE_MAX_DATA_SIZE];
   void* address;
 } _az_ulib_dm_package;
 

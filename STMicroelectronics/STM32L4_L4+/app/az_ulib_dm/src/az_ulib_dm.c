@@ -22,6 +22,7 @@
  */
 static az_ulib_dm* volatile _az_dm_cb = NULL;
 
+typedef void (*shell_entry_point)(void* code);
 typedef az_result (*publish_interface)(const az_ulib_ipc_table* const table);
 typedef az_result (*unpublish_interface)(const az_ulib_ipc_table* const table);
 
@@ -84,6 +85,7 @@ AZ_NODISCARD az_result az_ulib_dm_deinit(void)
 
 static az_result install_in_memory(void* base_address, az_span package_name)
 {
+  volatile void* old_data_address = NULL;
   AZ_ULIB_TRY
   {
     /* Is this a knowing package? */
@@ -97,19 +99,39 @@ static az_result install_in_memory(void* base_address, az_span package_name)
     _az_ulib_dm_package* package = get_first_package_free();
     AZ_ULIB_THROW_IF_ERROR((package != NULL), AZ_ERROR_NOT_ENOUGH_SPACE);
 
-    /* Call the publsh interface function in the package. */
-    uint32_t publish_position = *((uint32_t*)base_address + AZ_ULIB_DM_PACKAGE_PUBLISH);
+    /* Find the shell entry point in the package. */
+    uint32_t shell_entry_point_index
+        = *((uint32_t*)base_address + AZ_ULIB_DM_PACKAGE_SHELL_ENTRY_POINT);
+    shell_entry_point entry_point = (shell_entry_point)(
+        (uint8_t*)base_address + shell_entry_point_index
+        + (AZ_ULIB_DM_PACKAGE_SHELL_ENTRY_POINT << 2));
+
+    /* Find the publsh interface function in the package. */
+    uint32_t publish_position_index = *((uint32_t*)base_address + AZ_ULIB_DM_PACKAGE_PUBLISH);
     publish_interface publish = (publish_interface)(
-        (uint8_t*)base_address + publish_position + (AZ_ULIB_DM_PACKAGE_PUBLISH << 2));
+        (uint8_t*)base_address + publish_position_index + (AZ_ULIB_DM_PACKAGE_PUBLISH << 2));
+
     const az_ulib_ipc_table* table = az_ulib_ipc_get_table();
+    AZ_ULIB_PORT_GET_DATA_CONTEXT(&old_data_address);
+    AZ_ULIB_PORT_SET_DATA_CONTEXT(&(package->data));
+    if (entry_point != NULL)
+    {
+      entry_point(base_address);
+    }
     AZ_ULIB_THROW_IF_AZ_ERROR(publish(table));
+    AZ_ULIB_PORT_SET_DATA_CONTEXT(old_data_address);
 
     /* Store package information. */
-    az_span_copy(package->name, package_name);
-    package->name = az_span_create(az_span_ptr(package->name), az_span_size(package_name));
+    package->name = az_span_create(az_span_ptr(package_name), az_span_size(package_name));
     package->address = base_address;
   }
-  AZ_ULIB_CATCH(...) {}
+  AZ_ULIB_CATCH(...)
+  {
+    if (old_data_address != NULL)
+    {
+      AZ_ULIB_PORT_SET_DATA_CONTEXT(old_data_address);
+    }
+  }
 
   return AZ_ULIB_TRY_RESULT;
 }
