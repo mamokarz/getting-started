@@ -4,6 +4,7 @@
     .section	.preamble,"a",%progbits
 
     /* Define application-specific start/stop entry points for the module.  */
+    .global _gcc_setup
     .global publish_interface
     .global unpublish_interface
 
@@ -25,7 +26,7 @@ __txm_module_preamble:
                                                                 //           1 -> MPU protection (must have user mode selected - bit 0 set)
                                                                 //   Bit 0:  0 -> Privileged mode execution
                                                                 //           1 -> User mode execution
-    .dc.l      0                                                // Module Shell Entry Point
+    .dc.l      _gcc_setup - . - 0                               // Module Shell Entry Point
     .dc.l      0                                                // Module Start Thread Entry Point
     .dc.l      0                                                // Module Stop Thread Entry Point 
     .dc.l      0                                                // Module Start/Stop Thread Priority

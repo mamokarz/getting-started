@@ -26,18 +26,24 @@ target_include_directories(key_vault_v2i1
     ${CMAKE_CURRENT_LIST_DIR}
 )
 
+target_compile_options(key_vault_v2i1
+    PRIVATE
+        -fpie -fno-plt -fno-jump-tables ${PIC_FLAGS})
+
 target_link_options(key_vault_v2i1
     PRIVATE 
-        -T${CMAKE_CURRENT_LIST_DIR}/startup/gnu/STM32L475xx_FLASH.ld -Wl,-Map=key_vault_v2i1.map)
+        -T${CMAKE_CURRENT_LIST_DIR}/startup/gnu/STM32L475xx_FLASH.ld -pie -Wl,-Map=key_vault_v2i1.map)
 
 target_link_libraries(key_vault_v2i1
   az::ulib
-  az::core
+  az::core_pic
 )
 
 add_custom_command(TARGET key_vault_v2i1 
     POST_BUILD
-        COMMAND ${CMAKE_OBJCOPY} ARGS -O binary 
+        COMMAND ${CMAKE_OBJCOPY} ARGS -O binary -j .preamble -j .dynsym -j dynstr -j .rel.dyn 
+          -j .rel.plt -j .plt -j .interp -j .hash -j .text -j .dtors -j .ctors -j .got -j .rodata 
+          -j .fast -j .fast_run -j .data -j .data_run -j .bss -j .non_init -j .heap
         ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/key_vault_v2i1/key_vault_v2i1.elf
         ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/key_vault_v2i1/key_vault_v2i1.bin
     COMMENT "Converting the ELF output to a binary file"

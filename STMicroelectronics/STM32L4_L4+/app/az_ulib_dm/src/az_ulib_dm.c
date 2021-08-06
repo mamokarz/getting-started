@@ -99,6 +99,12 @@ static az_result install_in_memory(void* base_address, az_span package_name)
     _az_ulib_dm_package* package = get_first_package_free();
     AZ_ULIB_THROW_IF_ERROR((package != NULL), AZ_ERROR_NOT_ENOUGH_SPACE);
 
+    /* Check it the package name fits in the reserved buffer. */
+    if (az_span_size(package_name) > (int32_t)sizeof(package->name_buf))
+    {
+      AZ_ULIB_THROW(AZ_ERROR_NOT_ENOUGH_SPACE);
+    }
+
     /* Find the shell entry point in the package. */
     uint32_t shell_entry_point_index
         = *((uint32_t*)base_address + AZ_ULIB_DM_PACKAGE_SHELL_ENTRY_POINT);
@@ -122,7 +128,8 @@ static az_result install_in_memory(void* base_address, az_span package_name)
     AZ_ULIB_PORT_SET_DATA_CONTEXT(old_data_address);
 
     /* Store package information. */
-    package->name = az_span_create(az_span_ptr(package_name), az_span_size(package_name));
+    az_span_to_str((char*)package->name_buf, (int32_t)sizeof(package->name_buf), package_name);
+    package->name = az_span_create(package->name_buf, az_span_size(package_name));
     package->address = base_address;
   }
   AZ_ULIB_CATCH(...)

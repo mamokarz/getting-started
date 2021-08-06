@@ -71,7 +71,10 @@ static az_result split_url(
         ((next = slice_next_char(url, next + 1, '/', container)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
     // Get directories, if exist. */
-    // TODO: add code to read directories here.
+    if ((next = slice_next_char(url, next + 1, '/', directories)) != -1)
+    {
+      // TODO: Get more than one directory.
+    }
 
     // Get file_name. */
     AZ_ULIB_THROW_IF_ERROR(
@@ -152,6 +155,10 @@ static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void*
   if ((result = az_ulib_ustream_get_remaining_size(ustream_instance, &returned_size)) == AZ_OK)
   {
     // erase flash
+    if ((returned_size & 0x07FF) != 0x000)
+    {
+      returned_size = (returned_size & 0xFFFFF800) + 0x0800;
+    }
     if ((hal_status = internal_flash_erase((UCHAR*)address, returned_size)) != HAL_OK)
     {
       result = result_from_hal_status(hal_status);

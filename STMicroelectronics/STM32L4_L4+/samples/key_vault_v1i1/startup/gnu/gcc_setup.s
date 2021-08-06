@@ -137,9 +137,9 @@ crt0_memory_copy:
     beq     memory_copy_done
     sub     r2, r2, r1
 memory_copy_loop:
-    ldrb    r3, [r0]
+    ldrb    r6, [r0]
     add     r0, r0, #1
-    strb    r3, [r1]
+    strb    r6, [r1]
     add     r1, r1, #1
     sub     r2, r2, #1
     cmp     r2, #0

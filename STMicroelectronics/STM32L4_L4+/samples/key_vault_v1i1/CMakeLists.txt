@@ -41,7 +41,9 @@ target_link_libraries(key_vault_v1i1
 
 add_custom_command(TARGET key_vault_v1i1 
     POST_BUILD
-        COMMAND ${CMAKE_OBJCOPY} ARGS -O binary 
+        COMMAND ${CMAKE_OBJCOPY} ARGS -O binary -j .preamble -j .dynsym -j dynstr -j .rel.dyn 
+          -j .rel.plt -j .plt -j .interp -j .hash -j .text -j .dtors -j .ctors -j .got -j .rodata 
+          -j .fast -j .fast_run -j .data -j .data_run -j .bss -j .non_init -j .heap
         ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/key_vault_v1i1/key_vault_v1i1.elf
         ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/key_vault_v1i1/key_vault_v1i1.bin
     COMMENT "Converting the ELF output to a binary file"
