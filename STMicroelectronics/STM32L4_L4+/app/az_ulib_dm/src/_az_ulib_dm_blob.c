@@ -3,9 +3,9 @@
 // See LICENSE file in the project root for full license information.
 
 #include "_az_ulib_dm_blob.h"
-#include "az_ulib_dm_blob_ustream_interface.h"
+#include "az_ulib_dm_blob_ustream_forward_interface.h"
 #include "az_ulib_result.h"
-#include "az_ulib_ustream.h"
+#include "az_ulib_ustream_forward.h"
 #include "azure/az_core.h"
 #include "stm32l475_flash_driver.h"
 #include <stdbool.h>
@@ -16,10 +16,10 @@
 
 static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* slice)
 {
-  int32_t returned_size = az_span_size(span);
+  int32_t ustream_forward_size = az_span_size(span);
   uint8_t* buf = az_span_ptr(span);
   int32_t end = start;
-  while (end < returned_size)
+  while (end < ustream_forward_size)
   {
     if (buf[end] == c)
     {
@@ -117,10 +117,10 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_get_package_name(az_span url, az_span* n
   return AZ_ULIB_TRY_RESULT;
 }
 
-AZ_NODISCARD az_result _az_ulib_dm_blob_get_size(az_span url, int32_t* returned_size)
+AZ_NODISCARD az_result _az_ulib_dm_blob_get_size(az_span url, int32_t* ustream_forward_size)
 {
   (void)url;
-  (void)returned_size;
+  (void)ustream_forward_size;
   return AZ_ERROR_NOT_IMPLEMENTED;
 }
 
@@ -141,48 +141,47 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status)
   }
 }
 
-static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void* address)
+static az_result write_ustream_forward_to_flash(az_ulib_ustream_forward* ustream_forward, void* address)
 {
   az_result result;
   HAL_StatusTypeDef hal_status;
 
-  size_t returned_size = 0;
+  size_t ustream_forward_size = 0;
   static uint8_t local_buffer[256] = { 0 };
 
-  if ((result = az_ulib_ustream_get_remaining_size(ustream_instance, &returned_size)) == AZ_OK)
+  ustream_forward_size = az_ulib_ustream_forward_get_size(ustream_forward);
+  
+  // erase flash
+  if ((hal_status = internal_flash_erase((UCHAR*)address, ustream_forward_size)) != HAL_OK)
   {
-    // erase flash
-    if ((hal_status = internal_flash_erase((UCHAR*)address, returned_size)) != HAL_OK)
-    {
-      result = result_from_hal_status(hal_status);
-    }
+    result = result_from_hal_status(hal_status);
+  }
 
-    // start ustream data transfer from blob client
-    else
+  // start ustream data transfer from blob client
+  else
+  {
+    do
     {
-      do
+      // grab next buffer-full from ustream_forward
+      if ((result = az_ulib_ustream_forward_read(
+                ustream_forward, local_buffer, sizeof(local_buffer), &ustream_forward_size))
+          == AZ_OK) // should not use EOF
       {
-        // grab next buffer-full from ustream_instance
-        if ((result = az_ulib_ustream_read(
-                 ustream_instance, local_buffer, sizeof(local_buffer), &returned_size))
-            == AZ_OK) // should not use EOF
+        // write to flash if we have not reached the end of this chunk of data
+        if ((hal_status = internal_flash_write((uint8_t*)address, local_buffer, ustream_forward_size))
+            != HAL_OK)
         {
-          // write to flash if we have not reached the end of this chunk of data
-          if ((hal_status = internal_flash_write((uint8_t*)address, local_buffer, returned_size))
-              != HAL_OK)
-          {
-            result = result_from_hal_status(hal_status);
-          }
-          // increment the write address by the last write-size
-          address += returned_size;
+          result = result_from_hal_status(hal_status);
         }
-      } while (result == AZ_OK);
-    }
+        // increment the write address by the last write-size
+        address += ustream_forward_size;
+      }
+    } while (result == AZ_OK);
+  }
 
-    if (result == AZ_ULIB_EOF)
-    {
-      result = AZ_OK;
-    }
+  if (result == AZ_ULIB_EOF)
+  {
+    result = AZ_OK;
   }
 
   return result;
@@ -194,15 +193,13 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
   AZ_ULIB_TRY
   {
     (void)address;
-    az_ulib_ustream ustream_instance;
+    az_ulib_ustream_forward ustream_forward;
 
     static az_blob_http_cb blob_http_cb;
-    az_ulib_ustream_data_cb ustream_data_cb;
 
-    // create ustream_instance and blob client
-    AZ_ULIB_THROW_IF_AZ_ERROR(az_blob_create_ustream_from_blob(
-        &ustream_instance,
-        &ustream_data_cb,
+    // create ustream_forward and blob client
+    AZ_ULIB_THROW_IF_AZ_ERROR(az_blob_create_ustream_forward_from_blob(
+        &ustream_forward,
         NULL,
         &blob_http_cb,
         NULL,
@@ -210,11 +207,11 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
         (int8_t*)resource,
         (int8_t*)host));
 
-    // use ustream_instance to write blob package to flash
-    AZ_ULIB_THROW_IF_AZ_ERROR(write_ustream_to_flash(&ustream_instance, address));
+    // use ustream_forward to write blob package to flash
+    AZ_ULIB_THROW_IF_AZ_ERROR(write_ustream_forward_to_flash(&ustream_forward, address));
 
-    // free up connection and ustream_instance resources
-    AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ustream_dispose(&ustream_instance));
+    // free up connection and ustream_forward resources
+    AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ustream_forward_dispose(&ustream_forward));
   }
   AZ_ULIB_CATCH(...) {}
 
