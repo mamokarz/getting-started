@@ -179,7 +179,7 @@ AZ_NODISCARD az_result az_ulib_registry_delete(az_span key)
     {
       if (az_span_is_content_equal(key, runner->_internal.data.key))
       {
-        set_registry_node_delete_flag((uint8_t*)&runner);
+        set_registry_node_delete_flag((uint8_t*)runner);
         result = AZ_OK;
         break;
       }
