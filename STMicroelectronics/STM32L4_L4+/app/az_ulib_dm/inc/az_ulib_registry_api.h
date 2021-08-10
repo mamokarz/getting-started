@@ -24,13 +24,41 @@
 
 #include "azure/core/_az_cfg_prefix.h"
 
-#define AZ_ULIB_CONFIG_MAX_REGISTRY_ENTRIES 10
+#define MAX_AZ_ULIB_REGISTRY_ENTRIES 50
+#define MAX_AZ_ULIB_REGISTRY_BUFFER 4096
+#define AZ_ULIB_REGISTRY_FLAG_SIZE 8 // in bytes
 
-typedef enum
+#define REGISTRY_FREE 0xFFFFFFFFFFFFFFFF
+#define REGISTRY_READY 0x0000000000000000
+#define REGISTRY_DELETED 0x0000000000000000
+
+/**
+ * @brief   Structure for the registry node status.
+ *
+ * Every entry into the registry will have two flags that will indicate the status of the node.
+ * Status can be free, ready to use, and deleted
+ *
+ */
+typedef struct
 {
-  REGISTRY_USED = 0x00,
-  REGISTRY_FREE = 0xFF
-} az_registry_entry_type;
+  uint64_t ready_flag;
+  uint64_t delete_flag;
+} az_ulib_registry_node_status;
+
+/**
+ * @brief   Structure for the registry data containing key value pair of #az_span pointing to
+ *          location of data in flash.
+ */
+typedef struct
+{
+  /** The #az_span that contains pointer to a location in flash storing the key char string and the
+   * string's size.*/
+  az_span key;
+
+  /** The #az_span that contains pointer to a location in flash storing the valye char string and
+   * the string's size.*/
+  az_span value;
+} az_ulib_registry_node_data;
 
 /**
  * @brief   Structure for the registry control block
@@ -39,56 +67,51 @@ typedef enum
  * relevant information to restore the state of the registry after device power cycle.
  *
  */
-
 typedef struct
 {
-  /** The enum that declares whether a registry slot is occupied or not.*/
-  az_registry_entry_type used_flag;
+  struct
+  {
+    /** Flags that shows the status of the registry (free, occupied, deleted).*/
+    az_ulib_registry_node_status status;
 
-  /** The az_span that contains pointer to a location in flash storing the key char string and the
-   * string's size.*/
-  az_span key;
-
-  /** The az_span that contains pointer to a location in flash storing the valye char string and the
-   * string's size.*/
-  az_span value;
-} az_registry_block;
+    /** Struct that contains #az_span pair of key value pairs */
+    az_ulib_registry_node_data data;
+  } _internal;
+} az_ulib_registry_node;
 
 /**
- * @brief   This function gets the az_span value associated with the given az_span key from the
+ * @brief   This function gets the #az_span value associated with the given #az_span key from the
  * registry.
  *
  * This function goes through the registry comparing keys until it finds one that matches with the
  * input.
  *
- * @param[in]   key                  The az_span key to look for within the registry.
- * @param[in]   value                The az_span value corresponding to the input key
+ * @param[in]   key                  The #az_span key to look for within the registry.
+ * @param[in]   value                The #az_span value corresponding to the input key
  *
- * @pre         \p key                            shall not be `NULL`.
+ * @pre         \p key                            shall not be `#AZ_SPAN_EMPTY`.
  * @pre         \p sizeof(key)                    shall greater than zero.
  *
  * @return The #az_result with the result of the registry operations.
  *      @retval #AZ_OK                        If retrieving a value from the registry was
  *                                            successful
  *      @retval #AZ_ERROR_ITEM_NOT_FOUND      If there are no values that correspond to the
- *                                            given key within the registry. *
- *      @retval #AZ_ERROR_ARG                 If the parameters passed into`az_ulib_registry_get`
- *                                            violate requirements for this function.
+ *                                            given key within the registry.
  */
 AZ_NODISCARD az_result az_ulib_registry_get(az_span key, az_span* value);
 
 /**
- * @brief   This function adds an az_span key and an az_span value into the device registry.
+ * @brief   This function adds an #az_span key and an #az_span value into the device registry.
  *
  * This function goes through the registry ensuring there are no duplicate elements before
  * adding a new key value pair to the registry.
  *
- * @param[in]   key                  The az_span key to add to the registry.
- * @param[in]   value                The az_span value to add to the registry.
+ * @param[in]   key                  The #az_span key to add to the registry.
+ * @param[in]   value                The #az_span value to add to the registry.
  *
- * @pre         \p key                            shall not be `NULL`.
+ * @pre         \p key                            shall not be `#AZ_SPAN_EMPTY`.
  * @pre         \p sizeof(key)                    shall greater than zero.
- * @pre         \p value                          shall not be `NULL`.
+ * @pre         \p value                          shall not be `#AZ_SPAN_EMPTY`.
  * @pre         \p sizeof(value)                  shall greater than zero.
  *
  * @return The #az_result with the result of the registry operations.
@@ -99,9 +122,6 @@ AZ_NODISCARD az_result az_ulib_registry_get(az_span key, az_span* value);
  *                                                the system level.
  *      @retval #AZ_ERROR_ULIB_BUSY               If the resources necesary for the
  *                                                `az_ulib_registry_add` operation are busy.
- *      @retval #AZ_ERROR_ARG                     If the parameters passed into
- *                                                `az_ulib_registry_add` violate requirements for
- *                                                this function.
  */
 AZ_NODISCARD az_result az_ulib_registry_add(az_span key, az_span value);
 
@@ -114,7 +134,7 @@ AZ_NODISCARD az_result az_ulib_registry_delete(az_span key);
  * with registry control blocks.
  *
  * @return The #az_result with the result of the registry operations.
- *      @retval #AZ_OK                            If initializing the registry was successful. 
+ *      @retval #AZ_OK                            If initializing the registry was successful.
  */
 AZ_NODISCARD az_result az_ulib_registry_init();
 

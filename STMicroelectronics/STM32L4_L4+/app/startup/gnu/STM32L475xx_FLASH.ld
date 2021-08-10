@@ -178,6 +178,15 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
+    /* Registry data goes into FLASH */
+  .regdata :
+  {
+    . = ALIGN(8);
+    *(.regdata)         /* .regdata sections (list of key value pair.) */
+    *(.regdata*)        /* .regdata* sections (list of key value pai.) */
+    . = ALIGN(8);
+  } >REGISTRY
+
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {
