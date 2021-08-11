@@ -122,21 +122,51 @@ AZ_NODISCARD az_result az_ulib_registry_get(az_span key, az_span* value);
  *                                                the system level.
  *      @retval #AZ_ERROR_ULIB_BUSY               If the resources necesary for the
  *                                                `az_ulib_registry_add` operation are busy.
+ *      @retval #AZ_ERROR_OUT_OF_MEMORY           If the flash space for `az_ulib_registry_add`
+ *                                                is not enough for a new registry entry.
  */
 AZ_NODISCARD az_result az_ulib_registry_add(az_span key, az_span value);
 
+/**
+ * @brief   This function removes an #az_span key and it's corresponding #az_span value from the
+ * device registry.
+ *
+ * This function goes through the registry and marks the node with the given key value pair as
+ * deleted so that it can no longer be accessible.
+ *
+ * @param[in]   key                  The #az_span key to remove from the registry.
+ *
+ * @pre         \p key                            shall not be `#AZ_SPAN_EMPTY`.
+ * @pre         \p sizeof(key)                    shall greater than zero.
+ *
+ * @return The #az_result with the result of the registry operations.
+ *      @retval #AZ_OK                            If removing a value to the registry was successful
+ *      @retval #AZ_ERROR_ULIB_SYSTEM             If the `az_ulib_registry_delete` operation failed
+ *                                                on the system level.
+ *      @retval #AZ_ERROR_ULIB_BUSY               If the resources necesary for the
+ *                                                `az_ulib_registry_delete` operation are busy.
+ */
 AZ_NODISCARD az_result az_ulib_registry_delete(az_span key);
 
 /**
  * @brief   This function initializes the device registry.
  *
- * This function restores the state of the registry after reboot and repopulates the registry editor
- * with registry control blocks.
+ * This function initializes components that the registry needs upon reboot.
  *
  * @return The #az_result with the result of the registry operations.
  *      @retval #AZ_OK                            If initializing the registry was successful.
  */
 AZ_NODISCARD az_result az_ulib_registry_init();
+
+/**
+ * @brief   This function deinitializes the device registry.
+ *
+ * This function deinitializes components that the registry used. The registry can be reinitialized.
+ *
+ * @return The #az_result with the result of the registry operations.
+ *      @retval #AZ_OK                            If deinitializing the registry was successful.
+ */
+AZ_NODISCARD az_result az_ulib_registry_deinit();
 
 #include "azure/core/_az_cfg_suffix.h"
 
