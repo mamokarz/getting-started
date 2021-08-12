@@ -12,8 +12,8 @@
 #include "az_ulib_ipc_interface.h"
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
+#include "sprinkler.h"
 #include "sprinkler_1_model.h"
-#include "sprinkler_v1i1.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -37,7 +37,6 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
     az_json_reader jr;
     sprinkler_1_water_now_model_in water_now_model_in = { 0 };
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_init(&jr, model_in_span, NULL));
-    AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     while (jr.token.kind != AZ_JSON_TOKEN_END_OBJECT)
     {

@@ -3,7 +3,7 @@
 // See LICENSE file in the project root for full license information.
 
 /********************************************************************
- * This code was auto-generated from key_vault.1 DL and shall not be
+ * This code was auto-generated from cipher.1 DL and shall not be
  * modified.
  ********************************************************************/
 
@@ -13,7 +13,7 @@
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
 #include "cipher_1_model.h"
-#include "key_vault_v2i1.h"
+#include "key_vault.h"
 
 #include <stddef.h>
 #include <stdint.h>

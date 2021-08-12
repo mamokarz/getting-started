@@ -4,7 +4,7 @@
 
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
-#include "key_vault_v2i1.h"
+#include "key_vault.h"
 #include <inttypes.h>
 #include <stdint.h>
 

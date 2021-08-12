@@ -85,7 +85,6 @@ AZ_NODISCARD az_result az_ulib_dm_deinit(void)
 
 static az_result install_in_memory(void* base_address, az_span package_name)
 {
-  volatile void* old_data_address = NULL;
   AZ_ULIB_TRY
   {
     /* Is this a knowing package? */
@@ -118,27 +117,19 @@ static az_result install_in_memory(void* base_address, az_span package_name)
         (uint8_t*)base_address + publish_position_index + (AZ_ULIB_DM_PACKAGE_PUBLISH << 2));
 
     const az_ulib_ipc_table* table = az_ulib_ipc_get_table();
-    AZ_ULIB_PORT_GET_DATA_CONTEXT(&old_data_address);
     AZ_ULIB_PORT_SET_DATA_CONTEXT(&(package->data));
     if (entry_point != NULL)
     {
       entry_point(base_address);
     }
     AZ_ULIB_THROW_IF_AZ_ERROR(publish(table));
-    AZ_ULIB_PORT_SET_DATA_CONTEXT(old_data_address);
 
     /* Store package information. */
     az_span_to_str((char*)package->name_buf, (int32_t)sizeof(package->name_buf), package_name);
     package->name = az_span_create(package->name_buf, az_span_size(package_name));
     package->address = base_address;
   }
-  AZ_ULIB_CATCH(...)
-  {
-    if (old_data_address != NULL)
-    {
-      AZ_ULIB_PORT_SET_DATA_CONTEXT(old_data_address);
-    }
-  }
+  AZ_ULIB_CATCH(...) {}
 
   return AZ_ULIB_TRY_RESULT;
 }
@@ -207,10 +198,14 @@ AZ_NODISCARD az_result az_ulib_dm_uninstall(az_span package_name)
   {
     if ((package = get_package(package_name)) != NULL)
     {
-      uint32_t unpublish_position = *((uint32_t*)package->address + AZ_ULIB_DM_PACKAGE_UNPUBLISH);
-      unpublish_interface unpublish = (unpublish_interface)(
-          (uint8_t*)package->address + unpublish_position + (AZ_ULIB_DM_PACKAGE_UNPUBLISH << 2));
+      uint32_t unpublish_position_index
+          = *((uint32_t*)package->address + AZ_ULIB_DM_PACKAGE_UNPUBLISH);
+      publish_interface unpublish = (unpublish_interface)(
+          (uint8_t*)package->address + unpublish_position_index
+          + (AZ_ULIB_DM_PACKAGE_UNPUBLISH << 2));
       const az_ulib_ipc_table* table = az_ulib_ipc_get_table();
+
+      AZ_ULIB_PORT_SET_DATA_CONTEXT(&(package->data));
       if ((result = unpublish(table)) == AZ_OK)
       {
         package->address = NULL;

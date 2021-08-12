@@ -34,6 +34,30 @@ static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* 
   return -1;
 }
 
+static int32_t slice_latest_char(az_span span, int32_t start, uint8_t c, az_span* slice)
+{
+  uint8_t* buf = az_span_ptr(span) + start;
+  uint8_t* end_buf = az_span_ptr(span) + az_span_size(span);
+  int32_t latest = start;
+  while (buf < end_buf)
+  {
+    if (*buf == c)
+    {
+      latest = buf - az_span_ptr(span);
+    }
+    buf++;
+  }
+  if (latest != start)
+  {
+    if (slice != NULL)
+    {
+      *slice = az_span_slice(span, start, latest);
+    }
+    return latest;
+  }
+  return -1;
+}
+
 static az_result split_url(
     az_span url,
     az_span* protocol,
@@ -71,10 +95,9 @@ static az_result split_url(
         ((next = slice_next_char(url, next + 1, '/', container)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
     // Get directories, if exist. */
-    if ((next = slice_next_char(url, next + 1, '/', directories)) != -1)
-    {
-      // TODO: Get more than one directory.
-    }
+    AZ_ULIB_THROW_IF_ERROR(
+        ((next = slice_latest_char(url, next + 1, '/', directories)) != -1),
+        AZ_ERROR_UNEXPECTED_CHAR);
 
     // Get file_name. */
     AZ_ULIB_THROW_IF_ERROR(
@@ -113,7 +136,8 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_get_package_name(az_span url, az_span* n
   AZ_ULIB_TRY
   {
     AZ_ULIB_THROW_IF_AZ_ERROR(split_url(url, NULL, NULL, NULL, NULL, NULL, name, NULL));
-    AZ_ULIB_THROW_IF_ERROR((slice_next_char(*name, 0, '.', name) != -1), AZ_ERROR_UNEXPECTED_CHAR);
+    AZ_ULIB_THROW_IF_ERROR(
+        (slice_latest_char(*name, 0, '.', name) != -1), AZ_ERROR_UNEXPECTED_CHAR);
   }
   AZ_ULIB_CATCH(...) {}
 
@@ -155,10 +179,6 @@ static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void*
   if ((result = az_ulib_ustream_get_remaining_size(ustream_instance, &returned_size)) == AZ_OK)
   {
     // erase flash
-    if ((returned_size & 0x07FF) != 0x000)
-    {
-      returned_size = (returned_size & 0xFFFFF800) + 0x0800;
-    }
     if ((hal_status = internal_flash_erase((UCHAR*)address, returned_size)) != HAL_OK)
     {
       result = result_from_hal_status(hal_status);

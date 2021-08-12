@@ -6,7 +6,7 @@
 #include "stm32l4xx_hal.h"
 
 #include "az_ulib_result.h"
-#include "sprinkler_v1i1.h"
+#include "sprinkler.h"
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
