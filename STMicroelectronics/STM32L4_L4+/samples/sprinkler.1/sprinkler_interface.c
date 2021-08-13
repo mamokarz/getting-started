@@ -106,17 +106,6 @@ static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* m
   return AZ_ULIB_TRY_RESULT;
 }
 
-static az_result sprinkler_v1i1_end(void)
-{
-  AZ_ULIB_TRY
-  {
-    // stop sprinkler
-    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_v1i1_stop(0));
-  }
-  AZ_ULIB_CATCH(...) {}
-
-  return AZ_ULIB_TRY_RESULT;
-}
 static const az_ulib_capability_descriptor SPRINKLER_1_CAPABILITIES[]
     = { AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
             SPRINKLER_1_WATER_NOW_COMMAND_NAME,

@@ -23,6 +23,8 @@ extern "C"
 
   az_result sprinkler_v1i1_stop(int32_t area);
 
+  az_result sprinkler_v1i1_end(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -34,3 +34,5 @@ az_result sprinkler_v1i1_stop(int32_t area)
 
   return AZ_OK;
 }
+
+az_result sprinkler_v1i1_end(void) { return sprinkler_v1i1_stop(0); }
