@@ -190,7 +190,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 Turn on the sprinkler, which will be modeled by turning on a LED on the STM Board
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.water_now" --mp "{\`"area\`":0}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.water_now" --mp "{\`"zone\`":0}"
 
 // expected outcome
 {
@@ -201,7 +201,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sp
 
 Turn off the sprinkler, which will be modeled by turning off a LED on the STM Board
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.stop" --mp "{\`"area\`":0}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.stop" --mp "{\`"zone\`":0}" 
 
 // expected outcome
 {
@@ -308,7 +308,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 Turn on the sprinkler, which will be modeled by turning on a LED on the STM Board
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.water_now" --mp "{\`"area\`":0}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.water_now" --mp "{\`"zone\`":0}"
 
 // expected outcome
 {
@@ -319,7 +319,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sp
 
 Turn off the sprinkler, which will be modeled by turning off a LED on the STM Board
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.stop" --mp "{\`"area\`":0}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.stop" --mp "{\`"zone\`":0}" 
 
 // expected outcome
 {

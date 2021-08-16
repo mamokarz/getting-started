@@ -19,9 +19,9 @@ extern "C"
 #define SPRINKLER_1_PACKAGE_NAME "sprinkler"
 #define SPRINKLER_1_PACKAGE_VERSION 1
 
-  az_result sprinkler_v1i1_water_now(int32_t area, int32_t timer);
+  az_result sprinkler_v1i1_water_now(int32_t zone, int32_t timer);
 
-  az_result sprinkler_v1i1_stop(int32_t area);
+  az_result sprinkler_v1i1_stop(int32_t zone);
 
   az_result sprinkler_v1i1_end(void);
 

@@ -11,9 +11,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
-az_result sprinkler_v1i1_water_now(int32_t area, int32_t timer)
+az_result sprinkler_v1i1_water_now(int32_t zone, int32_t timer)
 {
-  if ((timer != 0) || (area != 0))
+  if ((timer != 0) || (zone != 0))
   {
     return AZ_ERROR_NOT_SUPPORTED;
   }
@@ -23,9 +23,9 @@ az_result sprinkler_v1i1_water_now(int32_t area, int32_t timer)
   return AZ_OK;
 }
 
-az_result sprinkler_v1i1_stop(int32_t area)
+az_result sprinkler_v1i1_stop(int32_t zone)
 {
-  if (area != 0)
+  if (zone != 0)
   {
     return AZ_ERROR_NOT_SUPPORTED;
   }

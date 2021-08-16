@@ -26,7 +26,7 @@ static az_result sprinkler_1_water_now_concrete(
     az_ulib_model_out out)
 {
   (void)out;
-  return sprinkler_v1i1_water_now(in->area, in->timer);
+  return sprinkler_v1i1_water_now(in->zone, in->timer);
 }
 
 static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -40,10 +40,10 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     while (jr.token.kind != AZ_JSON_TOKEN_END_OBJECT)
     {
-      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(SPRINKLER_1_AREA_NAME)))
+      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(SPRINKLER_1_ZONE_NAME)))
       {
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
-        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &(water_now_model_in.area)));
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &(water_now_model_in.zone)));
       }
       if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(SPRINKLER_1_TIMER_NAME)))
       {
@@ -71,7 +71,7 @@ static az_result sprinkler_1_stop_concrete(
     az_ulib_model_out out)
 {
   (void)out;
-  return sprinkler_v1i1_stop(in->area);
+  return sprinkler_v1i1_stop(in->zone);
 }
 
 static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -86,10 +86,10 @@ static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* m
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     while (jr.token.kind != AZ_JSON_TOKEN_END_OBJECT)
     {
-      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(SPRINKLER_1_AREA_NAME)))
+      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(SPRINKLER_1_ZONE_NAME)))
       {
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
-        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &(stop_model_in.area)));
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &(stop_model_in.zone)));
       }
       AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     }

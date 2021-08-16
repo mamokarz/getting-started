@@ -32,11 +32,11 @@ extern "C"
  */
 #define SPRINKLER_1_WATER_NOW_COMMAND (az_ulib_capability_index)0
 #define SPRINKLER_1_WATER_NOW_COMMAND_NAME "water_now"
-#define SPRINKLER_1_AREA_NAME "area"
+#define SPRINKLER_1_ZONE_NAME "zone"
 #define SPRINKLER_1_TIMER_NAME "timer"
   typedef struct
   {
-    int32_t area;
+    int32_t zone;
     int32_t timer;
   } sprinkler_1_water_now_model_in;
 
@@ -47,7 +47,7 @@ extern "C"
 #define SPRINKLER_1_STOP_COMMAND_NAME "stop"
   typedef struct
   {
-    int32_t area;
+    int32_t zone;
   } sprinkler_1_stop_model_in;
 
 #ifdef __cplusplus
