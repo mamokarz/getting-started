@@ -426,7 +426,7 @@ add_custom_command(TARGET sprinkler.2
           -j .fast -j .fast_run -j .data -j .data_run -j .bss -j .non_init -j .heap
         ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/sprinkler.1/sprinkler.1.elf
         ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/sprinkler.1/sprinkler.1.bin
-    COMMENT "Converting the ELF output to a binary file"
+    COMMENT "Converting the ELF output to a binary file. See https://manned.org/arm-none-eabi-objcopy for more information."
 )
 ```
 

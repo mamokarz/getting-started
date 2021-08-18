@@ -6,17 +6,17 @@ Please make sure you have completed the Getting Started Guide for the STM32 boar
 ## Open up an instance of Azure CLI 
 You can use the Azure Portal or an instance on Powershell/bash/other local environments
 
-Device Manager current support install code from 2 different sources.
+Device Manager currently supports installing code from 2 different sources.
 
 0. **In memory**: Is the code that was brought to the memory using external interfaces (like JTag).
 1. **From Blobs**: DM will download the code from Blobs using the provided URL.
 
 ## In Memory example
 
-Install an **In Memory** package assume that the binary is already in the MCU memory when the install command arrives. The main goal of this installation is to debug package's code. 
+Installing an **In Memory** package assumes that the binary is already in the MCU memory when the install command arrives. The main goal of this installation is to debug package's code. 
 If properly configured, all debug tools applicable to a code built in the OS can be equally applied to a package using the DCF in memory installation.
 
-The current example produces the key_vault.1, key_vault.2 and sprinkler.1 packages. The CMake will create the `.elf` and `.bin` for each package in ".\build\samples" directory.
+The current example produces the key_vault.1, key_vault.2 and sprinkler.1 packages. The CMake will create the `.elf` and `.bin` for each package in the ".\build\samples" directory.
 
 ```
   .\build\samples\key_vault.1\key_vault.1.elf
@@ -27,22 +27,22 @@ The current example produces the key_vault.1, key_vault.2 and sprinkler.1 packag
   .\build\samples\sprinkler.1\sprinkler.1.bin
 ```
 
-All packages use Position Independent Code (PIC), so they can be installed in any available memory in the MCU, for example, you may install key_vault.1 in the address 0x08050000, and sprinkler.1 in the address 0x08057000.
+All packages use Position Independent Code (PIC), so they can be installed in any available memory in the MCU. For example, you may install key_vault.1 in the address 0x08050000, and sprinkler.1 in the address 0x08057000.
 
 ### Upload Binary to MCU Flash
 
-Here are two ways to upload the binary to the MCU flash. Both examples use key_vault.1, you can do the same for key_vault.2 and sprinkler.1, replacing the package name and the target address.
+Here are two ways to upload the binary to the MCU flash. Both examples use key_vault.1. You can do the same for key_vault.2 and sprinkler.1, replacing the package name and the target address.
 
 <details>
 <summary>GDB Commands</summary>
 <br>
 
-One of the ways to upload the binary file is to use GDB commands.
+One of the ways to upload the binary file is to use the following GDB commands.
 
 ```
 load build/samples/key_vault.1/key_vault.1.elf 0x08050000
 ```
-and, if you are using GDB to debug your code, you can add the symbols as well. Symbols shall be attached from the .text section. to find it, you can use the readelf tool.
+If you are using GDB to debug your code, you can add the symbols as well. Symbols shall be attached from the .text section. to find it, you can use the readelf tool.
 ```bash
 arm-none-eabi-readelf.exe -S build/samples/key_vault.1/key_vault.1.elf
 There are 30 section headers, starting at offset 0x5aa78:
@@ -80,7 +80,7 @@ Section Headers:
   [28] .strtab           STRTAB          00000000 059a50 000f14 00      0   0  1
   [29] .shstrtab         STRTAB          00000000 05a964 000112 00      0   0  1
 ```
-As a result, you can see in the section 9, that .text starts at the relative position 0x00000260, which we shall add to the installed address 0x08050000, resulting in the address 0x08050260. The address may be different in your compilation.
+As a result, you can see in Section 9, that `.text` starts at the relative position 0x00000260, which we shall add to the installed address 0x08050000, resulting in the address 0x08050260. The address may be different in your compilation.
 ```
 add-symbol-file build/samples/key_vault.1/key_vault.1.elf 0x08050260
 ```
@@ -361,7 +361,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ke
 
 Once you have your package ready, it is time to distribute it to the devices. 
 
-If you do not have a Azure Storage account, you may create one following the steps in the [Create a storage account](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-create?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&tabs=azure-portal).
+If you do not have an Azure Storage account, you may create one following the steps in the [Create a storage account](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-create?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&tabs=azure-portal).
 
 **Note**: To distribute a package, you need a Azure Blob storage that allows **HTTP** connection, witch means that the option **Secure transfer required** shall be **Disabled**.
 

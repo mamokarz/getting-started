@@ -46,5 +46,5 @@ add_custom_command(TARGET key_vault.2
           -j .fast -j .fast_run -j .data -j .data_run -j .bss -j .non_init -j .heap
         ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/key_vault.2/key_vault.2.elf
         ${CMAKE_CURRENT_LIST_DIR}/../../build/samples/key_vault.2/key_vault.2.bin
-    COMMENT "Converting the ELF output to a binary file"
+    COMMENT "Converting the ELF output to a binary file. See https://manned.org/arm-none-eabi-objcopy for more information."
 )
