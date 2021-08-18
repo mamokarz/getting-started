@@ -35,11 +35,6 @@ Create a file called sprinkler_1_model.h with the following content in the direc
 // Licensed under the MIT license.
 // See LICENSE file in the project root for full license information.
 
-/********************************************************************
- * This code was auto-generated from sprinkler.1 DL and shall not be
- * modified.
- ********************************************************************/
-
 #ifndef SPRINKLER_1_MODULE_H
 #define SPRINKLER_1_MODULE_H
 
@@ -100,11 +95,6 @@ Create a file called sprinkler_interface.c with the following content in the dir
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license.
 // See LICENSE file in the project root for full license information.
-
-/********************************************************************
- * This code was auto-generated from sprinkler.1 DL and shall not be
- * modified.
- ********************************************************************/
 
 #include "az_ulib_capability_api.h"
 #include "az_ulib_descriptor_api.h"
@@ -417,7 +407,7 @@ target_include_directories(sprinkler.2
 
 target_compile_options(sprinkler.2
     PRIVATE
-        -fpie -fno-plt -fno-jump-tables ${PIC_FLAGS})
+        -fpie -fno-jump-tables ${PIC_FLAGS})
 
 target_link_options(sprinkler.2
     PRIVATE 
@@ -460,11 +450,11 @@ At this point, your sprinkler.2 project tree shall looks like:
 
 This CMake will create an executable sprinkler.2.elf that contains the files in the startup directory plus the concrete implementation of the interface and the business logic. Because it will expose an IPC interface, the library "az::ulib" is required. The library "az::core_pic" brings the implementation for the JSON parser, and "stm32cubel4" the HAL to access the MCU pins. 
 
-Sprinkler.1.elf contains the binary code to run in the MCU together with a few more information, tools like jTag knows that and extract the binary when loading the .elf to the MCU. In our case, we need to extract the binary to write directly in the memory. The POST_BUILD ObjCopy do this extraction creating the sprinkler.2.bin.
+Sprinkler.2.elf contains the binary code to run in the MCU together with a few more information, tools like jTag knows that and extract the binary when loading the .elf to the MCU. In our case, we need to extract the binary to write directly in the memory. The POST_BUILD ObjCopy do this extraction creating the sprinkler.2.bin.
 
 Include the new sample in the CMake of the samples by adding `add_subdirectory(sprinkler.2)` in the samples/CMakeLists.txt.
 
-To build the project, call again ".\tools\rebuild.bat". It will build the entire project creating 6 executables, including the new sprinkler.2.elf
+To build the project, call again ".\tools\rebuild.bat". It will build the entire project creating all executables, including the new sprinkler.2.elf
 
 ```
 [945/950] Linking C executable samples\sprinkler.2\sprinkler.2.elf
@@ -480,9 +470,9 @@ You can check the generated files at "/build/samples/sprinkler.2", there you wil
 Use the same steps as earlier to flash this new package (for example, into address `0x08057000`) with the [GDB commands](../../DCF_Demo.md###GDB-Commands) or [ST-Link Utility tool](../../DCF_Demo.md###STM32-ST-Link-Utility).
 
 ## Test the New Package
-Now, similar to key_vault.1, you can install sprinkler.2 using `invoke-device-method`. To install sprinker.2 package in the address 134574080 [0x08057000] 
+Now, similar to key_vault.1, you can install sprinkler.2 using `invoke-device-method`. To install sprinkler.2 package in the address 134574080 [0x08057000] 
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.1.install" --mp "{\"source_type\":0,\"address\":134574080,\"package_name\":\"sprinker.2\"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.packages.1.install" --mp "{\"source_type\":0,\"address\":134574080,\"package_name\":\"sprinker.2\"}" 
 
 // expected outcome
 {

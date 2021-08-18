@@ -28,7 +28,7 @@ target_include_directories(key_vault.2
 
 target_compile_options(key_vault.2
     PRIVATE
-        -fpie -fno-plt -fno-jump-tables ${PIC_FLAGS})
+        -fpie -fno-jump-tables ${PIC_FLAGS})
 
 target_link_options(key_vault.2
     PRIVATE 

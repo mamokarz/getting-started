@@ -161,7 +161,7 @@ static az_result concrete_read(
         result = AZ_OK;
       }
 
-      // All bytes in the current packet was consumed.
+      // All bytes in the current packet were consumed.
       else
       {
         // increase current position by size of last chunk

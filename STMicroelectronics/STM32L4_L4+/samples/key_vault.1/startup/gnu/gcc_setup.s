@@ -47,7 +47,7 @@ address_built:
 got_setup_done:
 
 
-    /* Copy initialised sections into RAM if required. */
+    /* Copy initialized sections into RAM if required. */
   
     ldr     r0, =__data_load_start__
     sub     r0,r0,r3

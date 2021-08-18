@@ -28,7 +28,7 @@ target_include_directories(sprinkler.1
 
 target_compile_options(sprinkler.1
     PRIVATE
-        -fpie -fno-plt -fno-jump-tables ${PIC_FLAGS})
+        -fpie -fno-jump-tables ${PIC_FLAGS})
 
 target_link_options(sprinkler.1
     PRIVATE 

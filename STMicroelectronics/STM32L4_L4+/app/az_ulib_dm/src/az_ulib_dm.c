@@ -98,7 +98,7 @@ static az_result install_in_memory(void* base_address, az_span package_name)
     _az_ulib_dm_package* package = get_first_package_free();
     AZ_ULIB_THROW_IF_ERROR((package != NULL), AZ_ERROR_NOT_ENOUGH_SPACE);
 
-    /* Check it the package name fits in the reserved buffer. */
+    /* Check if the package name fits in the reserved buffer. */
     if (az_span_size(package_name) > (int32_t)sizeof(package->name_buf))
     {
       AZ_ULIB_THROW(AZ_ERROR_NOT_ENOUGH_SPACE);
