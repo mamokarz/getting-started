@@ -41,10 +41,7 @@ extern "C"
     uint32_t algorithm;
     az_span src;
   } cipher_1_encrypt_model_in;
-  typedef struct
-  {
-    az_span* dest;
-  } cipher_1_encrypt_model_out;
+  typedef az_span cipher_1_encrypt_model_out;
 
 /*
  * Define decrypt command on cipher interface.
@@ -53,14 +50,8 @@ extern "C"
 #define CIPHER_1_DECRYPT_COMMAND_NAME "decrypt"
 #define CIPHER_1_DECRYPT_SRC_NAME "src"
 #define CIPHER_1_DECRYPT_DEST_NAME "dest"
-  typedef struct
-  {
-    az_span src;
-  } cipher_1_decrypt_model_in;
-  typedef struct
-  {
-    az_span* dest;
-  } cipher_1_decrypt_model_out;
+  typedef az_span cipher_1_decrypt_model_in;
+  typedef az_span cipher_1_decrypt_model_out;
 
 #ifdef __cplusplus
 }

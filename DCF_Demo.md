@@ -190,7 +190,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 Turn on the sprinkler, which will be modeled by turning on a LED on the STM Board
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.water_now" --mp "{\`"zone\`":0}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.water_now" --mp "{\"zone\":0}"
 
 // expected outcome
 {
@@ -201,7 +201,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sp
 
 Turn off the sprinkler, which will be modeled by turning off a LED on the STM Board
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.stop" --mp "{\`"zone\`":0}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.stop" --mp "{\"zone\":0}" 
 
 // expected outcome
 {
@@ -210,7 +210,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sp
 }
 ```
 
-We are now sending a secret message to the device and using the newly installed key_vault to decrypt the message. The response will be the decrypted result of the message.
+We are now sending a message to the device and using the newly installed key_vault to encrypt the message "Welcome to Azure IoT!". The response will be the encrypted result of the message.
 ```
 az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.cipher.1.encrypt" --mp "{\"context\":0, \"src\":\"Welcome to Azure IoT!\"}" 
 

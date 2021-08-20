@@ -45,10 +45,7 @@ extern "C"
  */
 #define SPRINKLER_1_STOP_COMMAND (az_ulib_capability_index)1
 #define SPRINKLER_1_STOP_COMMAND_NAME "stop"
-  typedef struct
-  {
-    int32_t zone;
-  } sprinkler_1_stop_model_in;
+  typedef int32_t sprinkler_1_stop_model_in;
 
 #ifdef __cplusplus
 }

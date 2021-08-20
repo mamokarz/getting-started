@@ -71,7 +71,7 @@ got_setup_done:
 relocation_loop:
     cmp     r0, r1                    // Loop over the rel.dyn table.
     beq     relocation_done
-    ldr     r2, [r0, #4]              // Table is composed by [offiset, info].
+    ldr     r2, [r0, #4]              // Table is composed by [offset, info].
     cmp     r2, #23                   // Look for info = R_ARM_RELATIVE (23)
     bne     relocation_not_rel        // Ignore all non-R_ARM_RELATIVE.
     ldr     r2, [r0]                  // Is the memory to relocate in the code or data area?

@@ -56,7 +56,7 @@ static az_result sprinkler_1_water_now_span_wrapper(az_span model_in_span, az_sp
 
     // Call.
     AZ_ULIB_THROW_IF_AZ_ERROR(
-        sprinkler_1_water_now_concrete((az_ulib_model_in)&water_now_model_in, NULL));
+        sprinkler_1_water_now_concrete(&water_now_model_in, NULL));
 
     // Marshalling empty water_now_model_out to JSON in model_out_span.
     *model_out_span = az_span_create_from_str("{}");
@@ -71,7 +71,7 @@ static az_result sprinkler_1_stop_concrete(
     az_ulib_model_out out)
 {
   (void)out;
-  return sprinkler_v1i1_stop(in->zone);
+  return sprinkler_v1i1_stop(*in);
 }
 
 static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -89,14 +89,14 @@ static az_result sprinkler_1_stop_span_wrapper(az_span model_in_span, az_span* m
       if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(SPRINKLER_1_ZONE_NAME)))
       {
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
-        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &(stop_model_in.zone)));
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_span_atoi32(jr.token.slice, &(stop_model_in)));
       }
       AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     }
     AZ_ULIB_THROW_IF_AZ_ERROR(AZ_ULIB_TRY_RESULT);
 
     // Call.
-    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_1_stop_concrete((az_ulib_model_in)&stop_model_in, NULL));
+    AZ_ULIB_THROW_IF_AZ_ERROR(sprinkler_1_stop_concrete(&stop_model_in, NULL));
 
     // Marshalling empty stop_model_out to JSON in model_out_span.
     *model_out_span = az_span_create_from_str("{}");
