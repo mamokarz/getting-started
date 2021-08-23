@@ -16,34 +16,33 @@
 #include <stdlib.h>
 #include <string.h>
 
-static az_result registry_1_get_value_concrete(
-    az_ulib_model_in model_in,
-    az_ulib_model_out model_out)
+static az_result registry_1_try_get_value_concrete(
+    const registry_1_try_get_value_model_in* const in,
+    registry_1_try_get_value_model_out* const out)
 {
-  (void)model_out;
-  const registry_1_get_model_in* const in = (const registry_1_get_model_in* const)model_in;
-  const registry_1_get_model_out* const out = (const registry_1_get_model_out* const)model_out;
-  return az_ulib_registry_get(in->registry_key, out->registry_value);
+  return az_ulib_registry_try_get_value(*in, out->value);
 }
 
-static az_result registry_1_add_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result registry_1_add_concrete(
+    const registry_1_add_model_in* const in,
+    az_ulib_model_out out)
 {
-  (void)model_out;
-  const registry_1_add_model_in* const in = (const registry_1_add_model_in* const)model_in;
-  return az_ulib_registry_add(in->new_key, in->new_value);
+  (void)out;
+  return az_ulib_registry_add(in->key, in->value);
 }
 
-static az_result registry_1_delete_concrete(az_ulib_model_in model_in, az_ulib_model_out model_out)
+static az_result registry_1_delete_concrete(
+    const registry_1_delete_model_in* const in,
+    az_ulib_model_out out)
 {
-  (void)model_out;
-  const registry_1_delete_model_in* const in = (const registry_1_delete_model_in* const)model_in;
-  return az_ulib_registry_delete(in->registry_key);
+  (void)out;
+  return az_ulib_registry_delete(*in);
 }
 
 static const az_ulib_capability_descriptor REGISTRY_1_CAPABILITIES[] = {
   AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
-      REGISTRY_1_GET_COMMAND_NAME,
-      registry_1_get_value_concrete,
+      REGISTRY_1_TRY_GET_VALUE_COMMAND_NAME,
+      registry_1_try_get_value_concrete,
       NULL),
   AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(REGISTRY_1_ADD_COMMAND_NAME, registry_1_add_concrete, NULL),
   AZ_ULIB_DESCRIPTOR_ADD_CAPABILITY(
@@ -72,3 +71,4 @@ az_result _az_ulib_registry_interface_unpublish(void)
   return AZ_OK;
 #endif // AZ_ULIB_CONFIG_IPC_UNPUBLISH
 }
+ 

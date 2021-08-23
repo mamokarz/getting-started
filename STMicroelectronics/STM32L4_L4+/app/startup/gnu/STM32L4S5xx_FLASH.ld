@@ -64,14 +64,16 @@ __RAM_segment_used_end__ = 0;
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 640K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 2044K
-REGISTRYINFO (rx)      : ORIGIN = 0x80FD800, LENGTH = 2K
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 2042K
+REGISTRYINFO (rx)      : ORIGIN = 0x80FE800, LENGTH = 2K
 REGISTRY (rx)      : ORIGIN = 0x80FF000, LENGTH = 4K
 }
 
-/* Custom address to be accessed from user C code */
+/* Custom variables to be accessed from user C code */
 __REGISTRY = ORIGIN(REGISTRY);
 __REGISTRYINFO = ORIGIN(REGISTRYINFO);
+__SIZEOF_REGISTRY = LENGTH(REGISTRY);
+__SIZEOF_REGISTRYINFO = LENGTH(REGISTRYINFO);
 
 /* Define output sections */
 SECTIONS
@@ -194,8 +196,6 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM
-
-
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
