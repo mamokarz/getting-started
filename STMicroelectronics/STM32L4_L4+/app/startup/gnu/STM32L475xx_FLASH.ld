@@ -47,14 +47,16 @@ MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 96K
 RAM2 (xrw)      : ORIGIN = 0x10000000, LENGTH = 32K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 1020K
-REGISTRYINFO (rx)      : ORIGIN = 0x80FD800, LENGTH = 2K
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 1018K
+REGISTRYINFO (rx)      : ORIGIN = 0x80FE800, LENGTH = 2K
 REGISTRY (rx)      : ORIGIN = 0x80FF000, LENGTH = 4K
 }
 
-/* Custom address to be accessed from user C code */
+/* Custom variables to be accessed from user C code */
 __REGISTRY = ORIGIN(REGISTRY);
 __REGISTRYINFO = ORIGIN(REGISTRYINFO);
+__SIZEOF_REGISTRY = LENGTH(REGISTRY);
+__SIZEOF_REGISTRYINFO = LENGTH(REGISTRYINFO);
 
 /* Define output sections */
 SECTIONS
@@ -177,15 +179,6 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM
-
-    /* Registry data goes into FLASH */
-  .regdata :
-  {
-    . = ALIGN(8);
-    *(.regdata)         /* .regdata sections (list of key value pair.) */
-    *(.regdata*)        /* .regdata* sections (list of key value pai.) */
-    . = ALIGN(8);
-  } >REGISTRY
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
