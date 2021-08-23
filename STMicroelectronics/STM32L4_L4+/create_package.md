@@ -472,7 +472,7 @@ Use the same steps as earlier to flash this new package (for example, into addre
 ## Test the New Package
 Now, similar to key_vault.1, you can install sprinkler.2 using `invoke-device-method`. To install sprinkler.2 package in the address 134574080 [0x08057000] 
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.packages.1.install" --mp "{\"source_type\":0,\"address\":134574080,\"package_name\":\"sprinker.2\"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1!install" --mp "{\"source_type\":0,\"address\":134574080,\"package_name\":\"sprinker.2\"}" 
 
 // expected outcome
 {
