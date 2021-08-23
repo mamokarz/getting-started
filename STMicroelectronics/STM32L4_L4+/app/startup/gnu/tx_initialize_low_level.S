@@ -105,7 +105,7 @@ _tx_initialize_low_level:
 @
     CPSID   i
 @
-@    /* Set base of available memory to end of non-initialised RAM area.  */
+@    /* Set base of available memory to end of non-initialized RAM area.  */
 @     
     LDR     r0, =_tx_initialize_unused_memory       @ Build address of unused memory pointer
     LDR     r1, =__RAM_segment_used_end__           @ Build first free address   
