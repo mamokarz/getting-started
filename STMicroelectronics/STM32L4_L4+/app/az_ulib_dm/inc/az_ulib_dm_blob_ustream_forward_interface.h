@@ -37,14 +37,6 @@ typedef struct az_blob_http_cb_tag
 
     /** The #NX_PACKET* pointing to the data associated with the http response. */
     NX_PACKET* packet_ptr;
-
-    /** The `offset_t` used to keep track of read offset within a given #NX_PACKET. */
-    offset_t read_offset;
-
-    /** The `bool` flag used to let this implementation of the ustream api `read` know when the
-     *  last chunk of data has been retrieved from the http connection to the targeted blob. 
-    */
-    bool last_chunk;
   } _internal;
 } az_blob_http_cb;
 
@@ -53,7 +45,7 @@ typedef struct az_blob_http_cb_tag
  * 
  * This API initializes `ustream_forward`, allowing the caller to gain access to the data inside 
  *    a blob located at the provided blob storage `ip`, `host`, and `resource`. The http connection
- *    to the blob storage server shall be established in this API and owned by the `blob_http_cb`. 
+ *    to the blob storage server shall be established in this API and owned by the `blob_http_cb`.
  *    The first chunk of data will also be retrieved and the total size of the blob assessed using
  *    the associated http response header. In addition, this `ustream_forward` takes ownership of 
  *    the memory associated with `blob_http_cb` and will release this memory when the 
@@ -65,11 +57,11 @@ typedef struct az_blob_http_cb_tag
  *                                                to release the ustream control block.
  * @param[in]   blob_http_cb_release_callback     The #az_ulib_release_callback function signature 
  *                                                to release the ustream data buffer.
- * @param[in]   blob_http_cb                      The #az_blob_http_cb* to perform the blob http 
+ * @param[in]   blob_http_cb                      The #az_blob_http_cb* to perform the blob http
  *                                                actions.
  * @param[in]   ip                                The #NXD_ADDRESS* server ip address.
  * @param[in]   resource                          The `int8_t*` blob resource /0 terminated string.
- * @param[in]   host                              The `int8_t*` blob storage host /0 terminated 
+ * @param[in]   host                              The `int8_t*` blob storage host /0 terminated
  *                                                string.
  *
  * @pre         \p ustream_forward                shall not be `NULL`.
@@ -77,7 +69,7 @@ typedef struct az_blob_http_cb_tag
  * @pre         \p ip                             shall not be `NULL`.
  * @pre         \p sizeof(resource)               shall greater than zero.
  * @pre         \p sizeof(host)                   shall greater than zero.
- * 
+ *
  * @return The #az_result with the result of the contained NX operations.
  *      @retval #AZ_OK                        If the ustream and associated blob http actions were
  *                                            completed successfully.
