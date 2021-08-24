@@ -24,6 +24,7 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status);
 static az_result set_registry_node_ready_flag(uint8_t* address);
 static az_result set_registry_node_delete_flag(uint8_t* address);
 static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_ptr);
+static bool is_empty_buf(uint8_t* test_buf, int32_t buf_size);
 static uint8_t* flash_buf_get();
 
 static az_result result_from_hal_status(HAL_StatusTypeDef status)
@@ -68,6 +69,7 @@ static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_
     az_ulib_registry_node* runner;
     uint32_t node_index;
 
+    /* Initialize to beginning of REGISTRYINFO flash section */
     runner = (az_ulib_registry_node*)(&__REGISTRYINFO);
 
     /* Look for next available spot */
@@ -86,7 +88,8 @@ static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_
     /* Handle case if all nodes were used */
     AZ_ULIB_THROW_IF_ERROR((node_index < MAX_AZ_ULIB_REGISTRY_ENTRIES), AZ_ERROR_OUT_OF_MEMORY);
 
-    /* Store pointers to key value pair into flash */
+    /* Store pointers to key value pair into flash. Store both flags, key az_span, and value
+     * az_spans */
     AZ_ULIB_THROW_IF_AZ_ERROR(result_from_hal_status(internal_flash_write(
         (uint8_t*)(runner) + (2 * AZ_ULIB_REGISTRY_FLAG_SIZE), // add size of flags
         (uint8_t*)&(node._internal.key),
@@ -100,7 +103,7 @@ static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_
   return AZ_ULIB_TRY_RESULT;
 }
 
-/* Find pointer to the next available space in flash to store registry key/value */
+/* Find pointer to the next available space in flash to store registry key/value. */
 static uint8_t* flash_buf_get()
 {
   uint8_t* flash_ptr;
@@ -108,7 +111,7 @@ static uint8_t* flash_buf_get()
   az_ulib_registry_node* last_node;
   az_ulib_registry_node* runner;
 
-  /* Find occupied node that has maximum address such that a new key-value pair can be stored */
+  /* Find occupied node that has maximum address such that a new key-value pair can be stored. */
   runner = (az_ulib_registry_node*)(&__REGISTRYINFO);
   last_node = runner; // initialize to the first node
   for (uint32_t i = 0; i < MAX_AZ_ULIB_REGISTRY_ENTRIES; i++)
@@ -123,7 +126,7 @@ static uint8_t* flash_buf_get()
     runner++;
   }
 
-  /* Last_node should have reference to the last node in available memory, with rounded address */
+  /* Last_node should have reference to the last node in available memory, with rounded address. */
   int32_t value_buf_size;
   value_buf_size = ((((az_span_size(last_node->_internal.value) - 1) >> 3) + 1) << 3);
 
@@ -266,7 +269,7 @@ AZ_NODISCARD az_result az_ulib_registry_add(az_span key, az_span value)
         internal_flash_write(val_dest_ptr, az_span_ptr(value), az_span_size(value))));
 
     /* After successful storage of registry node and actual key value pair, set flag in node to
-    indicate the entry is now ready to use  */
+    indicate the entry is now ready to use.  */
     AZ_ULIB_THROW_IF_AZ_ERROR(set_registry_node_ready_flag(new_node_ptr));
 
     AZ_ULIB_CATCH(...) {}

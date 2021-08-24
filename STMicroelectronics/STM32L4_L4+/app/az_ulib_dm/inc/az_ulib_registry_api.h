@@ -24,12 +24,14 @@
 
 #include "azure/core/_az_cfg_prefix.h"
 
+/* Variables to access size of flash sections allocated in linker */
 extern uint32_t __SIZEOF_REGISTRYINFO;
 extern uint32_t __SIZEOF_REGISTRY;
 
 /* Each az_ulib_registry_node is 32 bytes. RegistryInfo is a 2k section in FLASH */
 #define AZ_ULIB_REGISTRY_NODE_SIZE 32
-#define MAX_AZ_ULIB_REGISTRY_ENTRIES ((uint32_t)(&__SIZEOF_REGISTRYINFO))/AZ_ULIB_REGISTRY_NODE_SIZE
+#define MAX_AZ_ULIB_REGISTRY_ENTRIES \
+  ((uint32_t)(&__SIZEOF_REGISTRYINFO)) / AZ_ULIB_REGISTRY_NODE_SIZE
 #define MAX_AZ_ULIB_REGISTRY_BUFFER (uint32_t)(&__SIZEOF_REGISTRY)
 #define AZ_ULIB_REGISTRY_FLAG_SIZE 8 // in bytes
 
@@ -37,11 +39,10 @@ extern uint32_t __SIZEOF_REGISTRY;
 #define REGISTRY_READY 0x0000000000000000
 #define REGISTRY_DELETED 0x0000000000000000
 
-
 /**
- * @brief   Structure for the registry control block
+ * @brief   Structure for the registry control node.
  *
- * Every entry into the registry of the device will have a registry control block that contains
+ * Every entry into the registry of the device will have a registry control node that contains
  * relevant information to restore the state of the registry after device power cycle.
  *
  */
@@ -49,16 +50,17 @@ typedef struct
 {
   struct
   {
-    /** Two flags that shows the status of a node in the registry (ready or deleted).*/
+    /** Two flags that shows the status of a node in the registry (ready, deleted). If both flags
+     * are set, the node is deleted and cannot be used again. */
     uint64_t ready_flag;
     uint64_t delete_flag;
 
     /** The #az_span that contains a pointer to a location in flash storing the key char string and
-    * the string's size.*/
+     * the string's size.*/
     az_span key;
 
     /** The #az_span that contains pointer to a location in flash storing the value char string and
-    * the string's size.*/
+     * the string's size.*/
     az_span value;
   } _internal;
 } az_ulib_registry_node;
@@ -136,7 +138,7 @@ AZ_NODISCARD az_result az_ulib_registry_delete(az_span key);
  * @brief   This function initializes the device registry.
  *
  * This function initializes components that the registry needs upon reboot. This function is not
- * thread safe and all other APIs shall only be invoked after the initialization ends. 
+ * thread safe and all other APIs shall only be invoked after the initialization ends.
  */
 void az_ulib_registry_init();
 
@@ -150,4 +152,3 @@ void az_ulib_registry_deinit();
 #include "azure/core/_az_cfg_suffix.h"
 
 #endif /* AZ_ULIB_REGISTRY_API_H */
- 
