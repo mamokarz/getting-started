@@ -37,33 +37,6 @@ extern uint32_t __SIZEOF_REGISTRY;
 #define REGISTRY_READY 0x0000000000000000
 #define REGISTRY_DELETED 0x0000000000000000
 
-/**
- * @brief   Structure for the registry node status.
- *
- * Every entry into the registry will have two flags that will indicate the status of the node.
- * Status can be free, ready to use, and deleted.
- *
- */
-typedef struct
-{
-  uint64_t ready_flag;
-  uint64_t delete_flag;
-} az_ulib_registry_node_status;
-
-/**
- * @brief   Structure for the registry data containing key value pair of #az_span pointing to
- *          location of data in flash.
- */
-typedef struct
-{
-  /** The #az_span that contains a pointer to a location in flash storing the key char string and
-   * the string's size.*/
-  az_span key;
-
-  /** The #az_span that contains pointer to a location in flash storing the value char string and
-   * the string's size.*/
-  az_span value;
-} az_ulib_registry_node_data;
 
 /**
  * @brief   Structure for the registry control block
@@ -76,11 +49,17 @@ typedef struct
 {
   struct
   {
-    /** Flags that shows the status of the registry (free or deleted).*/
-    az_ulib_registry_node_status status;
+    /** Two flags that shows the status of a node in the registry (ready or deleted).*/
+    uint64_t ready_flag;
+    uint64_t delete_flag;
 
-    /** Struct that contains #az_span pair of key value pairs */
-    az_ulib_registry_node_data data;
+    /** The #az_span that contains a pointer to a location in flash storing the key char string and
+    * the string's size.*/
+    az_span key;
+
+    /** The #az_span that contains pointer to a location in flash storing the value char string and
+    * the string's size.*/
+    az_span value;
   } _internal;
 } az_ulib_registry_node;
 
@@ -156,7 +135,8 @@ AZ_NODISCARD az_result az_ulib_registry_delete(az_span key);
 /**
  * @brief   This function initializes the device registry.
  *
- * This function initializes components that the registry needs upon reboot.
+ * This function initializes components that the registry needs upon reboot. This function is not
+ * thread safe and all other APIs shall only be invoked after the initialization ends. 
  */
 void az_ulib_registry_init();
 

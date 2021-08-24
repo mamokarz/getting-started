@@ -51,7 +51,14 @@ static az_result set_registry_node_ready_flag(uint8_t* address)
 static az_result set_registry_node_delete_flag(uint8_t* address)
 {
   return result_from_hal_status(internal_flash_write_doubleword(
-        ((uint32_t)address + AZ_ULIB_REGISTRY_FLAG_SIZE), REGISTRY_DELETED));
+      ((uint32_t)address + AZ_ULIB_REGISTRY_FLAG_SIZE), REGISTRY_DELETED));
+}
+
+static bool is_empty_buf(uint8_t* test_buf, int32_t buf_size)
+{
+  uint8_t buf[buf_size];
+  memset(buf, 0xFF, buf_size);
+  return (memcmp(test_buf, buf, buf_size) == 0);
 }
 
 static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_ptr)
@@ -66,7 +73,10 @@ static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_
     /* Look for next available spot */
     for (node_index = 0; node_index < MAX_AZ_ULIB_REGISTRY_ENTRIES; node_index++)
     {
-      if (runner->_internal.status.ready_flag == REGISTRY_FREE)
+      if (runner->_internal.ready_flag == REGISTRY_FREE
+          && runner->_internal.delete_flag != REGISTRY_DELETED
+          && is_empty_buf((uint8_t*)&(runner->_internal.key), sizeof(az_span))
+          && is_empty_buf((uint8_t*)&(runner->_internal.value), sizeof(az_span)))
       {
         break;
       }
@@ -78,9 +88,9 @@ static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_
 
     /* Store pointers to key value pair into flash */
     AZ_ULIB_THROW_IF_AZ_ERROR(result_from_hal_status(internal_flash_write(
-        (uint8_t*)(runner) + sizeof(az_ulib_registry_node_status), // add size of flags
-        (uint8_t*)&(node._internal.data),
-        sizeof(az_ulib_registry_node_data))));
+        (uint8_t*)(runner) + (2 * AZ_ULIB_REGISTRY_FLAG_SIZE), // add size of flags
+        (uint8_t*)&(node._internal.key),
+        (2 * sizeof(node._internal.key)))));
 
     /* Return pointer to this node for setting flags later */
     *node_ptr = (uint8_t*)runner;
@@ -94,42 +104,31 @@ static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_
 static uint8_t* flash_buf_get()
 {
   uint8_t* flash_ptr;
-  az_ulib_registry_node node;
 
-  /* Is there an empty registry? */
-  node = *(az_ulib_registry_node*)(&__REGISTRYINFO);
-  if (node._internal.status.ready_flag == REGISTRY_FREE)
-  {
-    flash_ptr = (uint8_t*)(&__REGISTRY);
-  }
-  else
-  {
-    uint8_t* max_address = (uint8_t*)(&__REGISTRY); /* The beginning of buffer space */
-    az_ulib_registry_node* last_node;
-    az_ulib_registry_node* runner;
+  az_ulib_registry_node* last_node;
+  az_ulib_registry_node* runner;
 
-    /* Find occupied node that has maximum address such that a new key-value pair can be stored */
-    runner = (az_ulib_registry_node*)(uint8_t*)(&__REGISTRYINFO);
-    for (uint32_t i = 0; i < MAX_AZ_ULIB_REGISTRY_ENTRIES; i++)
+  /* Find occupied node that has maximum address such that a new key-value pair can be stored */
+  runner = (az_ulib_registry_node*)(&__REGISTRYINFO);
+  last_node = runner; // initialize to the first node
+  for (uint32_t i = 0; i < MAX_AZ_ULIB_REGISTRY_ENTRIES; i++)
+  {
+    if (runner->_internal.ready_flag == REGISTRY_READY)
     {
-      if (runner->_internal.status.ready_flag == REGISTRY_READY)
+      if (az_span_ptr(runner->_internal.value) > az_span_ptr(last_node->_internal.value))
       {
-        if (az_span_ptr(runner->_internal.data.value) > max_address)
-        {
-          max_address = az_span_ptr(runner->_internal.data.value);
-          last_node = runner;
-        }
+        last_node = runner;
       }
-      runner++;
     }
-
-    /* Last_node should have reference to the last node in available memory, with rounded address */
-    int32_t value_buf_size;
-    value_buf_size = ((((az_span_size(last_node->_internal.data.value) - 1) >> 3) + 1) << 3);
-
-    /* Calculate final flash_ptr */
-    flash_ptr = az_span_ptr(last_node->_internal.data.value) + value_buf_size;
+    runner++;
   }
+
+  /* Last_node should have reference to the last node in available memory, with rounded address */
+  int32_t value_buf_size;
+  value_buf_size = ((((az_span_size(last_node->_internal.value) - 1) >> 3) + 1) << 3);
+
+  /* Calculate final flash_ptr */
+  flash_ptr = az_span_ptr(last_node->_internal.value) + value_buf_size;
 
   return flash_ptr;
 }
@@ -158,9 +157,9 @@ AZ_NODISCARD az_result az_ulib_registry_delete(az_span key)
   runner = (az_ulib_registry_node*)(&__REGISTRYINFO);
   for (uint32_t i = 0; i < MAX_AZ_ULIB_REGISTRY_ENTRIES; i++)
   {
-    if (runner->_internal.status.ready_flag == REGISTRY_READY)
+    if (runner->_internal.ready_flag == REGISTRY_READY)
     {
-      if (az_span_is_content_equal(key, runner->_internal.data.key))
+      if (az_span_is_content_equal(key, runner->_internal.key))
       {
         result = set_registry_node_delete_flag((uint8_t*)runner);
         break;
@@ -189,14 +188,14 @@ AZ_NODISCARD az_result az_ulib_registry_try_get_value(az_span key, az_span* valu
   runner = (az_ulib_registry_node*)(&__REGISTRYINFO);
   for (uint32_t i = 0; i < MAX_AZ_ULIB_REGISTRY_ENTRIES; i++)
   {
-    if (runner->_internal.status.delete_flag != REGISTRY_DELETED)
+    if (runner->_internal.delete_flag != REGISTRY_DELETED)
     {
       /* If the content is not deleted and ready for use */
-      if (runner->_internal.status.ready_flag == REGISTRY_READY)
+      if (runner->_internal.ready_flag == REGISTRY_READY)
       {
-        if (az_span_is_content_equal(key, runner->_internal.data.key))
+        if (az_span_is_content_equal(key, runner->_internal.key))
         {
-          *value = runner->_internal.data.value;
+          *value = runner->_internal.value;
           result = AZ_OK;
           break;
         }
@@ -246,9 +245,13 @@ AZ_NODISCARD az_result az_ulib_registry_add(az_span key, az_span value)
         (val_dest_ptr < ((uint8_t*)(&__REGISTRY) + MAX_AZ_ULIB_REGISTRY_BUFFER)),
         AZ_ERROR_OUT_OF_MEMORY);
 
+    /* Validate key and value buffers in memory are valid for writing*/
+    AZ_ULIB_THROW_IF_ERROR(is_empty_buf(key_dest_ptr, az_span_size(key)), AZ_ERROR_ULIB_SYSTEM);
+    AZ_ULIB_THROW_IF_ERROR(is_empty_buf(val_dest_ptr, az_span_size(value)), AZ_ERROR_ULIB_SYSTEM);
+
     /* Set free node information */
-    new_node._internal.data.key = az_span_create(key_dest_ptr, az_span_size(key));
-    new_node._internal.data.value = az_span_create(val_dest_ptr, az_span_size(value));
+    new_node._internal.key = az_span_create(key_dest_ptr, az_span_size(key));
+    new_node._internal.value = az_span_create(val_dest_ptr, az_span_size(value));
 
     /* Update registry node in flash */
     new_node_ptr = NULL;
@@ -273,4 +276,3 @@ AZ_NODISCARD az_result az_ulib_registry_add(az_span key, az_span value)
 
   return AZ_ULIB_TRY_RESULT;
 }
- 

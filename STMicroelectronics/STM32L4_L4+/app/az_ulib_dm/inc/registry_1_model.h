@@ -10,7 +10,6 @@
 #ifndef REGISTRY_1_MODEL_H
 #define REGISTRY_1_MODEL_H
 
-//#include "az_ulib_ipc_api.h"
 #include "az_ulib_capability_api.h"
 #include "az_ulib_result.h"
 #include "azure/az_core.h"
