@@ -70,18 +70,7 @@ AZ_NODISCARD az_result az_ulib_dm_init(az_ulib_dm* dm_handle)
     az_span_fill(package->name, '\0');
   }
 
-  // Testing code, to be removed before commit
-  az_result result;
-  az_ulib_registry_init();
-
-  // Add to registry
-  az_span key = az_span_create_from_str("apple");
-  az_span value = az_span_create_from_str("banana");
-  result = az_ulib_registry_add(key, value);
-
-  az_ulib_registry_deinit();
-  return result;
-  // return _az_ulib_dm_interface_publish();
+  return _az_ulib_dm_interface_publish();
 }
 
 AZ_NODISCARD az_result az_ulib_dm_deinit(void)
