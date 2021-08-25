@@ -106,93 +106,95 @@ static az_result concrete_read(
 
   az_result result;
 
-  az_ulib_ustream_data_cb* control_block = ustream_instance->control_block;
-  az_blob_http_cb* blob_http_cb = (az_blob_http_cb*)control_block->ptr;
-
-  // keep track of our position in the local buffer
-  size_t remain_size_local_buffer = buffer_length;
-
-  // keep track of our position in the inner buffer (packet)
-  size_t remain_size_inner_buffer;
-
-  // keep track of total size copied
-  size_t total_size_copied = 0;
-
-  // while we still have room left in the local buffer and we have not reached the end of the
-  // package
-  do
+  if (ustream_instance->inner_current_position == ustream_instance->length)
   {
-    // keep track of our position in the inner buffer
-    remain_size_inner_buffer = blob_http_cb->_internal.packet_ptr->nx_packet_length
-        - (size_t)ustream_instance->offset_diff;
+    // All bytes already returned.
+    result = AZ_ULIB_EOF;
+  }
+  else
+  {
+    az_ulib_ustream_data_cb* control_block = ustream_instance->control_block;
+    az_blob_http_cb* blob_http_cb = (az_blob_http_cb*)control_block->ptr;
 
-    // if we have not reached the end of the inner buffer, copy the next data to the local buffer
-    if (remain_size_inner_buffer > 0)
+    // keep track of our position in the local buffer
+    size_t remain_size_local_buffer = buffer_length;
+
+    // keep track of our position in the inner buffer (packet)
+    size_t remain_size_inner_buffer;
+
+    // keep track of total size copied
+    size_t total_size_copied = 0;
+
+    // while we still have room left in the local buffer and we have not reached the end of the
+    // package
+    do
     {
-      // size to copy is the smaller of the remaining size in the inner buffer or the local buffer
-      size_t size_to_copy = remain_size_inner_buffer < remain_size_local_buffer
-          ? remain_size_inner_buffer
-          : remain_size_local_buffer;
+      // keep track of our position in the inner buffer
+      remain_size_inner_buffer = blob_http_cb->_internal.packet_ptr->nx_packet_length
+          - (size_t)ustream_instance->offset_diff;
 
-      // copy data from inner buffer to local buffer
-      memcpy(
-          buffer + (buffer_length - remain_size_local_buffer),
-          blob_http_cb->_internal.packet_ptr->nx_packet_prepend_ptr + ustream_instance->offset_diff,
-          size_to_copy);
+      // if we have not reached the end of the inner buffer, copy the next data to the local buffer
+      if (remain_size_inner_buffer > 0)
+      {
+        // size to copy is the smaller of the remaining size in the inner buffer or the local buffer
+        size_t size_to_copy = remain_size_inner_buffer < remain_size_local_buffer
+            ? remain_size_inner_buffer
+            : remain_size_local_buffer;
 
-      // decrease the remaining size in our local buffer
-      remain_size_local_buffer -= size_to_copy;
+        // copy data from inner buffer to local buffer
+        memcpy(
+            buffer + (buffer_length - remain_size_local_buffer),
+            blob_http_cb->_internal.packet_ptr->nx_packet_prepend_ptr
+                + ustream_instance->offset_diff,
+            size_to_copy);
 
-      // increase the passed size for the caller
-      total_size_copied += size_to_copy;
+        // decrease the remaining size in our local buffer
+        remain_size_local_buffer -= size_to_copy;
 
-      // increase offset to keep track of our position in the inner buffer
-      ustream_instance->offset_diff += size_to_copy;
+        // increase the passed size for the caller
+        total_size_copied += size_to_copy;
 
-      // set result to AZ_OK for next loop 
-      result = AZ_OK;
-    }
+        // increase offset to keep track of our position in the inner buffer
+        ustream_instance->offset_diff += size_to_copy;
 
-    // else if we have not already grabbed the last chunk, grab another
-    else if (!blob_http_cb->_internal.last_chunk)
-    {
-      result = _az_nx_blob_client_grab_chunk(
-          &blob_http_cb->_internal.http_client,
-          &blob_http_cb->_internal.packet_ptr,
-          BLOB_CLIENT_NX_API_WAIT_TIME);
-      if ((result == AZ_OK) || (result == AZ_ULIB_EOF))
+        // set result to AZ_OK for next loop
+        result = AZ_OK;
+      }
+
+      // All bytes in the current packet were consumed.
+      else
       {
         // increase current position by size of last chunk
         ustream_instance->inner_current_position += ustream_instance->offset_diff;
         // reset current offset
         ustream_instance->offset_diff = 0;
-      }
 
-      // raise last_chunk flag so we can exit once done processing this last chunk
-      if (result == AZ_ULIB_EOF)
-      {
-        blob_http_cb->_internal.last_chunk = true;
-      }
-    }
+        // else if we have not already grabbed the last chunk, grab another
+        if (ustream_instance->inner_current_position != ustream_instance->length)
+        {
+          if ((result = _az_nx_blob_client_grab_chunk(
+                   &blob_http_cb->_internal.http_client,
+                   &blob_http_cb->_internal.packet_ptr,
+                   BLOB_CLIENT_NX_API_WAIT_TIME))
+              == AZ_ULIB_EOF)
+          {
+            result = AZ_OK;
+          }
+        }
 
-    // else this is the last buffer-full to copy, exit
-    else
+        // else this is the last buffer-full to copy, exit
+        else
+        {
+          break;
+        }
+      }
+    } while ((remain_size_local_buffer > 0) && (result == AZ_OK));
+
+    // load total size copied into returned size if successful
+    if (result == AZ_OK)
     {
-      break;
+      *size = total_size_copied;
     }
-  } while ((remain_size_local_buffer > 0) && ((result == AZ_OK) || (result == AZ_ULIB_EOF)));
-
-  // load total size copied into returned size if successful
-  if ((result == AZ_OK) || (result == AZ_ULIB_EOF))
-  {
-    *size = total_size_copied;
-    result = AZ_OK;
-  }
-
-  // set result to EOF if we have finished processing the last chunk
-  if (blob_http_cb->_internal.last_chunk && (remain_size_inner_buffer <= 0))
-  {
-    result = AZ_ULIB_EOF;
   }
 
   return result;
@@ -284,26 +286,20 @@ AZ_NODISCARD az_result az_blob_create_ustream_from_blob(
   _az_PRECONDITION_NOT_NULL(ustream_data_cb);
   _az_PRECONDITION_NOT_NULL(blob_http_cb);
   _az_PRECONDITION_NOT_NULL(ip);
-  _az_PRECONDITION(strlen((char*)resource) > 0);
-  _az_PRECONDITION(strlen((char*)host) > 0);
+  _az_PRECONDITION_NOT_NULL(resource);
+  _az_PRECONDITION_NOT_NULL(host);
+  _az_PRECONDITION(resource[0] != 0);
+  _az_PRECONDITION(host[0] != 0);
 
   AZ_ULIB_TRY
   {
-    // initialize blob http control block
-    blob_http_cb->_internal.last_chunk = false;
-
     // initialize blob client
     AZ_ULIB_THROW_IF_AZ_ERROR(_az_nx_blob_client_init(
-        &blob_http_cb->_internal.http_client,
-        ip,
-        BLOB_CLIENT_NX_API_WAIT_TIME));
+        &blob_http_cb->_internal.http_client, ip, BLOB_CLIENT_NX_API_WAIT_TIME));
 
     // send request
     AZ_ULIB_THROW_IF_AZ_ERROR(_az_nx_blob_client_request_send(
-        &blob_http_cb->_internal.http_client,
-        resource,
-        host,
-        BLOB_CLIENT_NX_API_WAIT_TIME));
+        &blob_http_cb->_internal.http_client, resource, host, BLOB_CLIENT_NX_API_WAIT_TIME));
 
     // grab first chunk and save package size
     AZ_ULIB_THROW_IF_AZ_ERROR(_az_nx_blob_client_grab_chunk(
@@ -314,10 +310,6 @@ AZ_NODISCARD az_result az_blob_create_ustream_from_blob(
     // grab blob package size for ustream init
     uint32_t package_size
         = (uint32_t)blob_http_cb->_internal.http_client.nx_web_http_client_total_receive_bytes;
-    if ((package_size & 0x07FF) != 0x000)
-    {
-      package_size = (package_size & 0xFFFFF800) + 0x0800;
-    }
 
     // initialize ustream
     AZ_ULIB_THROW_IF_AZ_ERROR(az_blob_ustream_init(

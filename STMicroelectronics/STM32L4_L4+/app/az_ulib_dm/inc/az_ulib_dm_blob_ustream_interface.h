@@ -37,38 +37,33 @@ typedef struct az_blob_http_cb_tag
 
     /** The #NX_PACKET* pointing to the data associated with the http response.*/
     NX_PACKET* packet_ptr;
-
-    /** The `bool` flag used to let this implementation of the ustream api `read` know when the
-     *  last chunk of data has been retrieved from the http connection to the targeted blob. 
-    */
-    bool last_chunk;
   } _internal;
 } az_blob_http_cb;
 
 /**
  * @brief   Create a ustream with an associated blob http control block.
- * 
- * This API initializes `ustream_instance`, allowing the caller to gain access to the data inside 
+ *
+ * This API initializes `ustream_instance`, allowing the caller to gain access to the data inside
  *    a blob located at the provided blob storage `ip`, `host`, and `resource`. The http connection
- *    to the blob storage server shall be established in this API and owned by the `blob_http_cb`. 
+ *    to the blob storage server shall be established in this API and owned by the `blob_http_cb`.
  *    The first chunk of data will also be retrieved and the total size of the blob assessed using
- *    the associated http response header. In addition, this `ustream_instance` takes ownership of 
+ *    the associated http response header. In addition, this `ustream_instance` takes ownership of
  *    the memory associated with `blob_http_cb` and will release this memory when the ref count of
  *    the `ustream_data_cb` goes to zero.
  *
- * @param[in]   ustream_instance                  The #az_ulib_ustream* with the interface of the 
+ * @param[in]   ustream_instance                  The #az_ulib_ustream* with the interface of the
  *                                                ustream.
- * @param[in]   ustream_data_cb                   The #az_ulib_ustream_data_cb* to point to the 
+ * @param[in]   ustream_data_cb                   The #az_ulib_ustream_data_cb* to point to the
  *                                                ustream data.
- * @param[in]   blob_http_cb_release_callback     The #az_ulib_release_callback function signature 
+ * @param[in]   blob_http_cb_release_callback     The #az_ulib_release_callback function signature
  *                                                to release the ustream data buffer.
- * @param[in]   blob_http_cb                      The #az_blob_http_cb* to perform the blob http 
+ * @param[in]   blob_http_cb                      The #az_blob_http_cb* to perform the blob http
  *                                                actions.
- * @param[in]   ustream_data_cb_release_callback  The #az_ulib_release_callback function signature 
+ * @param[in]   ustream_data_cb_release_callback  The #az_ulib_release_callback function signature
  *                                                to release the ustream control block.
  * @param[in]   ip                                The #NXD_ADDRESS* server ip address.
  * @param[in]   resource                          The `int8_t*` blob resource /0 terminated string.
- * @param[in]   host                              The `int8_t*` blob storage host /0 terminated 
+ * @param[in]   host                              The `int8_t*` blob storage host /0 terminated
  *                                                string.
  *
  * @pre         \p ustream_instance               shall not be `NULL`.
@@ -77,7 +72,7 @@ typedef struct az_blob_http_cb_tag
  * @pre         \p ip                             shall not be `NULL`.
  * @pre         \p sizeof(resource)               shall greater than zero.
  * @pre         \p sizeof(host)                   shall greater than zero.
- * 
+ *
  * @return The #az_result with the result of the contained NX operations.
  *      @retval #AZ_OK                        If the ustream and associated blob http actions were
  *                                            completed successfully.
@@ -91,8 +86,8 @@ typedef struct az_blob_http_cb_tag
  *                                            `create_ustream_from_blob` do not satisfy
  *                                            the requirements put forth by the NX functions called
  *                                            within this function.
- *      @retval #AZ_ERROR_ARG                 If the parameters passed into 
- *                                            `create_ustream_from_blob` violate the option, 
+ *      @retval #AZ_ERROR_ARG                 If the parameters passed into
+ *                                            `create_ustream_from_blob` violate the option,
  *                                            pointer, or caller requirements put for in the NX
  *                                            functions called within this function.
  */
