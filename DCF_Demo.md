@@ -3,6 +3,43 @@
 ## Prerequisites 
 Please make sure you have completed the Getting Started Guide for the STM32 board and flashed the binary to your device before continuing this demo. [Instructions for STM32 Getting Started Guide](https://github.com/mamokarz/getting-started/blob/master/README.md)
 
+## About DCF [Device Composition Framework]
+DCF is a technology created by Microsoft to improve the way that developers embedded their code in a device connected to the cloud. It isolates the RTOS image from the product business logic adding the ability to install and uninstall packages in a running device and publish interfaces from these packages.
+
+DCF uses the concept of “publish once, use everywhere”. So, if authorized, a published interface can be accessed locally in the device, by other packages, as much as from other devices or services in the cloud. 
+
+For this demo, DCF uses a Gateway, connecting these interfaces to the Azure IoT Invoke Device Method.
+
+### IDM [Invoke Device Method] Gateway
+The DCF Gateway is responsible for **Naming** and **Protocol** translation.
+
+#### Naming
+Translates the name from an external network to the DCF internal address. In IDM the capability is identified as `--mn` or "method name". For example (using the Azure CLI to invoke a method):
+```
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.*.query.1:query" --mp "{}"
+```
+The `--mn` uses the format `<package_name>.<package_version>.<interface_name>.<interface_version>:<capability_name>`, so, "ipc.*.query.1:query" means:
+  * `package_name` = `ipc`: Stands for the device IPC [Inter-process Communication].
+  * `package_version` = `*`: Which is the wildcard that represents the *default* version of the `ipc` package.
+  * `interface_name` = `query`: This is an standard interface to query information from a package.
+  * `interface_version` = `1`: This is the version of the interface `query` implemented by the `ipc` package.
+  * `capability_name` = `query`: The interface `query` implements the command `query` that starts a new query, and `next` that retrieves the next portion of information using the continuation token. So, in this example, we are invoking the `query` command.
+
+#### Protocol translation
+Translates the input and output arguments from the format used by the external network to a binary format used by the interface capabilities. For example:
+```
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.*.cipher.1:encrypt" --mp "{\"algorithm\":0, \"src\":\"Welcome to Azure IoT!\"}" 
+```
+The `--mp` or "method payload" contains 2 arguments using JSON format, however the capability `encrypt` expect the binary data in the structure
+```c
+  typedef struct
+  {
+    uint32_t algorithm;
+    az_span src;
+  } cipher_1_encrypt_model_in;
+```
+So, the gateway uses an JSON parser to execute this conversion.
+
 ## Open up an instance of Azure CLI 
 You can use the Azure Portal or an instance on Powershell/bash/other local environments
 
@@ -148,6 +185,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 ```
 
+**Note**: The `*` in front of the names represent that this is default package for that interface.
 
 Install key_vault.1 package in the address 134545408 [0x08050000] and sprinkler.1 in the address 134574080 [0x08057000]
 ```
@@ -212,7 +250,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sp
 
 We are now sending a message to the device and using the newly installed key_vault to encrypt the message "Welcome to Azure IoT!". The response will be the encrypted result of the message.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.*.cipher.1:encrypt" --mp "{\"context\":0, \"src\":\"Welcome to Azure IoT!\"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.*.cipher.1:encrypt" --mp "{\"algorithm\":0, \"src\":\"Welcome to Azure IoT!\"}" 
 
 // expected outcome
 {
@@ -266,6 +304,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 ```
 
+**Note**: The `*` in front of the names represent that this is default package for that interface.
 
 Install key_vault.1 package in the address 134545408 [0x08050000] and sprinkler.1 in the address 134574080 [0x08057000]
 ```
@@ -330,7 +369,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sp
 
 We are now sending a message to the device and using the newly installed key_vault to encrypt the message "Welcome to Azure IoT!". The response will be the encrypted result of the message.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.*.cipher.1:encrypt" --mp "{\`"context\`":0, \`"src\`":\`"Welcome to Azure IoT!\`"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.*.cipher.1:encrypt" --mp "{\`"algorithm\`":0, \`"src\`":\`"Welcome to Azure IoT!\`"}" 
 
 // expected outcome
 {
