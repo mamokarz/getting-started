@@ -185,7 +185,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 ```
 
-**Note**: The `*` in front of the names represent that this is default package for that interface.
+**Note**: A `*` in front of a name indicates that this is the default package for this interface.
 
 Install key_vault.1 package in the address 134545408 [0x08050000] and sprinkler.1 in the address 134574080 [0x08057000]
 ```
@@ -304,7 +304,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 ```
 
-**Note**: The `*` in front of the names represent that this is default package for that interface.
+**Note**: A `*` in front of a name indicates that this is the default package for this interface.
 
 Install key_vault.1 package in the address 134545408 [0x08050000] and sprinkler.1 in the address 134574080 [0x08057000]
 ```
@@ -597,7 +597,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 ## Safe package update
 
-One of the advantages to use DCF is the safe package update mechanism. It allows developers and administrators to test new packages on the devices before switch to this package, and rollback for the old package, if it is necessary. The tutorial [How to safe update a DCF package](DCF_Safe_Update.md) will take you through this process, using 2 versions of the key_vault package created on this tutorial. 
+One of the advantages of using DCF is the safe package update mechanism. It allows developers and administrators to test new packages on the devices before officially switching, It also supports rollback to the old package if necessary. The tutorial [How to safe update a DCF package](DCF_Safe_Update.md) will take you through this process using 2 versions of the key_vault package created in this tutorial. 
 
 ## Creating Your Own Package
 
