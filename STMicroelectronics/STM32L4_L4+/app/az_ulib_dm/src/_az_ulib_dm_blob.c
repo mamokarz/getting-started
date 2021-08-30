@@ -94,16 +94,17 @@ static az_result split_url(
     AZ_ULIB_THROW_IF_ERROR(
         ((next = slice_next_char(url, next + 1, '/', container)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
-    // Get directories, if exist. */
-    AZ_ULIB_THROW_IF_ERROR(
-        ((next = slice_latest_char(url, next + 1, '/', directories)) != -1),
-        AZ_ERROR_UNEXPECTED_CHAR);
+    /* Get directories, if it exists. */
+    if((next = slice_latest_char(url, next + 1, '/', directories)) == -1)
+    {
+      *directories = AZ_SPAN_EMPTY;
+    }
 
-    // Get file_name. */
+    /* Get file_name. */
     AZ_ULIB_THROW_IF_ERROR(
         ((next = slice_next_char(url, next + 1, '?', file_name)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
-    // Get sas_token. */
+    /* Get sas_token. */
     if (sas_token != NULL)
     {
       *sas_token = az_span_slice_to_end(url, next + 1);
