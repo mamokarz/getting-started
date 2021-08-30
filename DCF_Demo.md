@@ -21,7 +21,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 The `--mn` uses the format `<package_name>.<package_version>.<interface_name>.<interface_version>:<capability_name>`, so, "ipc.*.query.1:query" means:
   * `package_name` = `ipc`: Stands for the device IPC [Inter-process Communication].
   * `package_version` = `*`: Which is the wildcard that represents the *default* version of the `ipc` package.
-  * `interface_name` = `query`: This is an standard interface to query information from a package.
+  * `interface_name` = `query`: This is a standard interface to query information from a package.
   * `interface_version` = `1`: This is the version of the interface `query` implemented by the `ipc` package.
   * `capability_name` = `query`: The interface `query` implements the command `query` that starts a new query, and `next` that retrieves the next portion of information using the continuation token. So, in this example, we are invoking the `query` command.
 
@@ -38,7 +38,7 @@ The `--mp` or "method payload" contains 2 arguments using JSON format, however t
     az_span src;
   } cipher_1_encrypt_model_in;
 ```
-So, the gateway uses an JSON parser to execute this conversion.
+So, the gateway uses a JSON parser to execute this conversion.
 
 ## Open up an instance of Azure CLI 
 You can use the Azure Portal or an instance on Powershell/bash/other local environments
