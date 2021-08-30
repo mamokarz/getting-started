@@ -3,6 +3,43 @@
 ## Prerequisites 
 Please make sure you have completed the Getting Started Guide for the STM32 board and flashed the binary to your device before continuing this demo. [Instructions for STM32 Getting Started Guide](https://github.com/mamokarz/getting-started/blob/master/README.md)
 
+## About DCF [Device Composition Framework]
+DCF is a technology created by Microsoft to improve the way that developers embedded their code in a device connected to the cloud. It isolates the RTOS image from the product business logic adding the ability to install and uninstall packages in a running device and publish interfaces from these packages.
+
+DCF uses the concept of “publish once, use everywhere”. So, if authorized, a published interface can be accessed locally in the device, by other packages, as much as from other devices or services in the cloud. 
+
+For this demo, DCF uses a Gateway, connecting these interfaces to the Azure IoT Invoke Device Method.
+
+### IDM [Invoke Device Method] Gateway
+The DCF Gateway is responsible for **Naming** and **Protocol** translation.
+
+#### Naming
+Translates the name from an external network to the DCF internal address. In IDM the capability is identified as `--mn` or "method name". For example (using the Azure CLI to invoke a method):
+```
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.*.query.1:query" --mp "{}"
+```
+The `--mn` uses the format `<package_name>.<package_version>.<interface_name>.<interface_version>:<capability_name>`, so, "ipc.*.query.1:query" means:
+  * `package_name` = `ipc`: Stands for the device IPC [Inter-process Communication].
+  * `package_version` = `*`: Which is the wildcard that represents the *default* version of the `ipc` package.
+  * `interface_name` = `query`: This is a standard interface to query information from a package.
+  * `interface_version` = `1`: This is the version of the interface `query` implemented by the `ipc` package.
+  * `capability_name` = `query`: The interface `query` implements the command `query` that starts a new query, and `next` that retrieves the next portion of information using the continuation token. So, in this example, we are invoking the `query` command.
+
+#### Protocol translation
+Translates the input and output arguments from the format used by the external network to a binary format used by the interface capabilities. For example:
+```
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.*.cipher.1:encrypt" --mp "{\"algorithm\":0, \"src\":\"Welcome to Azure IoT!\"}" 
+```
+The `--mp` or "method payload" contains 2 arguments using JSON format, however the capability `encrypt` expect the binary data in the structure
+```c
+  typedef struct
+  {
+    uint32_t algorithm;
+    az_span src;
+  } cipher_1_encrypt_model_in;
+```
+So, the gateway uses a JSON parser to execute this conversion.
+
 ## Open up an instance of Azure CLI 
 You can use the Azure Portal or an instance on Powershell/bash/other local environments
 
@@ -131,16 +168,16 @@ For the next steps, you shall have the package key_vault.1 uploaded to the memor
 
 Query for existing interfaces on the device 
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.query.1.query" --mp "{}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.*.query.1:query" --mp "{}"
 
 // expected outcome
 {
   "payload": {
     "continuation_token": 655615,
     "result": [
-      "+ipc.1.query.1",
-      "+ipc.1.interface_manager.1",
-      "+dm.1.packages.1"
+      "*ipc.1.query.1",
+      "*ipc.1.interface_manager.1",
+      "*dm.1.packages.1"
     ]
   },
   "status": 200
@@ -148,10 +185,11 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 ```
 
+**Note**: A `*` in front of a name indicates that this is the default package for this interface.
 
 Install key_vault.1 package in the address 134545408 [0x08050000] and sprinkler.1 in the address 134574080 [0x08057000]
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.packages.1.install" --mp "{\"source_type\":0,\"address\":134545408,\"package_name\":\"key_vault.1\"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\"source_type\":0,\"address\":134545408,\"package_name\":\"key_vault.1\"}" 
 
 // expected outcome
 {
@@ -159,7 +197,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
   "status": 200
 }
 
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.packages.1.install" --mp "{\"source_type\":0,\"address\":134574080,\"package_name\":\"sprinkler.1\"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\"source_type\":0,\"address\":134574080,\"package_name\":\"sprinkler.1\"}" 
 
 // expected outcome
 {
@@ -170,18 +208,18 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
 
 Query for existing interfaces on the device. You should be able to see the newly installed key_vault and sprinkler interfaces.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.query.1.query" --mp "{}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.*.query.1:query" --mp "{}"
 
 // expected outcome
 {
   "payload": {
     "continuation_token": 655615,
     "result": [
-      "+ipc.1.query.1",
-      "+ipc.1.interface_manager.1",
-      "+dm.1.packages.1",
-      "+key_vault.1.cipher.1",
-      "+sprinkler.1.sprinkler.1"
+      "*ipc.1.query.1",
+      "*ipc.1.interface_manager.1",
+      "*dm.1.packages.1",
+      "*key_vault.1.cipher.1",
+      "*sprinkler.1.sprinkler.1"
     ]
   },
   "status": 200
@@ -190,7 +228,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 Turn on the sprinkler, which will be modeled by turning on a LED on the STM Board
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.water_now" --mp "{\"zone\":0}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.*.sprinkler.1:water_now" --mp "{\"zone\":0}"
 
 // expected outcome
 {
@@ -201,7 +239,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sp
 
 Turn off the sprinkler, which will be modeled by turning off a LED on the STM Board
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.stop" --mp "{\"zone\":0}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.*.sprinkler.1:stop" --mp "{\"zone\":0}" 
 
 // expected outcome
 {
@@ -212,7 +250,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sp
 
 We are now sending a message to the device and using the newly installed key_vault to encrypt the message "Welcome to Azure IoT!". The response will be the encrypted result of the message.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.cipher.1.encrypt" --mp "{\"context\":0, \"src\":\"Welcome to Azure IoT!\"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.*.cipher.1:encrypt" --mp "{\"algorithm\":0, \"src\":\"Welcome to Azure IoT!\"}" 
 
 // expected outcome
 {
@@ -225,7 +263,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ke
 
 We are now sending the result of the encrypted message back to the device to decrypt, and we should get our original message back.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.cipher.1.decrypt" --mp "{\"src\":\"0ZldfV1pbUhhNXhJyTkBEUhhwX2Uh\"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.*.cipher.1:decrypt" --mp "{\"src\":\"0ZldfV1pbUhhNXhJyTkBEUhhwX2Uh\"}" 
 
 // expected outcome
 {
@@ -249,16 +287,16 @@ The commands are different for Powershell because you have to use ` to escape an
 
 Query for existing interfaces on the device 
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.query.1.query" --mp "{}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.*.query.1:query" --mp "{}"
 
 // expected outcome
 {
   "payload": {
     "continuation_token": 655615,
     "result": [
-      "+ipc.1.query.1",
-      "+ipc.1.interface_manager.1",
-      "+dm.1.packages.1"
+      "*ipc.1.query.1",
+      "*ipc.1.interface_manager.1",
+      "*dm.1.packages.1"
     ]
   },
   "status": 200
@@ -266,10 +304,11 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 ```
 
+**Note**: A `*` in front of a name indicates that this is the default package for this interface.
 
 Install key_vault.1 package in the address 134545408 [0x08050000] and sprinkler.1 in the address 134574080 [0x08057000]
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.packages.1.install" --mp "{\`"source_type\`":0,\`"address\`":134545408,\`"package_name\`":\`"key_vault.1\`"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\`"source_type\`":0,\`"address\`":134545408,\`"package_name\`":\`"key_vault.1\`"}" 
 
 // expected outcome
 {
@@ -277,7 +316,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
   "status": 200
 }
 
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.packages.1.install" --mp "{\`"source_type\`":0,\`"address\`":134574080,\`"package_name\`":\`"sprinkler.1\`"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\`"source_type\`":0,\`"address\`":134574080,\`"package_name\`":\`"sprinkler.1\`"}" 
 
 // expected outcome
 {
@@ -288,18 +327,18 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
 
 Query for existing interfaces on the device. You should be able to see the newly installed key_vault and sprinkler interfaces.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.query.1.query" --mp "{}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.*.query.1:query" --mp "{}"
 
 // expected outcome
 {
   "payload": {
     "continuation_token": 655615,
     "result": [
-      "+ipc.1.query.1",
-      "+ipc.1.interface_manager.1",
-      "+dm.1.packages.1",
-      "+key_vault.1.cipher.1",
-      "+sprinkler.1.sprinkler.1"
+      "*ipc.1.query.1",
+      "*ipc.1.interface_manager.1",
+      "*dm.1.packages.1",
+      "*key_vault.1.cipher.1",
+      "*sprinkler.1.sprinkler.1"
     ]
   },
   "status": 200
@@ -308,7 +347,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 Turn on the sprinkler, which will be modeled by turning on a LED on the STM Board
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.water_now" --mp "{\`"zone\`":0}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.*.sprinkler.1:water_now" --mp "{\`"zone\`":0}"
 
 // expected outcome
 {
@@ -319,7 +358,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sp
 
 Turn off the sprinkler, which will be modeled by turning off a LED on the STM Board
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.sprinkler.1.stop" --mp "{\`"zone\`":0}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sprinkler.*.sprinkler.1:stop" --mp "{\`"zone\`":0}" 
 
 // expected outcome
 {
@@ -330,7 +369,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "sp
 
 We are now sending a message to the device and using the newly installed key_vault to encrypt the message "Welcome to Azure IoT!". The response will be the encrypted result of the message.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.cipher.1.encrypt" --mp "{\`"context\`":0, \`"src\`":\`"Welcome to Azure IoT!\`"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.*.cipher.1:encrypt" --mp "{\`"algorithm\`":0, \`"src\`":\`"Welcome to Azure IoT!\`"}" 
 
 // expected outcome
 {
@@ -343,7 +382,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ke
 
 We are now sending the result of the encrypted message back to the device to decrypt, and we should get our original message back.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.cipher.1.decrypt" --mp "{\`"src\`":\`"0ZldfV1pbUhhNXhJyTkBEUhhwX2Uh\`"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "key_vault.*.cipher.1:decrypt" --mp "{\`"src\`":\`"0ZldfV1pbUhhNXhJyTkBEUhhwX2Uh\`"}" 
 
 // expected outcome
 {
@@ -418,7 +457,7 @@ Install you package to a remote device running DCF using invoke-device-method:
 
 If you have sprinkler.1 installed, uninstall it before trying to install the new package from Blobs.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.packages.1.uninstall" --mp "{\"package_name\":\"sprinkler.1\"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:uninstall" --mp "{\"package_name\":\"sprinkler.1\"}" 
 
 // expected outcome: Azure CLI
 {
@@ -430,17 +469,17 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
 Query for existing interfaces on the device to make sure that you don't have the sprinkler.1 interface anymore.
 
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.query.1.query" --mp "{}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.*.query.1:query" --mp "{}"
 
 // expected outcome
 {
   "payload": {
     "continuation_token": 655615,
     "result": [
-      "+ipc.1.query.1",
-      "+ipc.1.interface_manager.1",
-      "+dm.1.packages.1",
-      "+key_vault.1.cipher.1"
+      "*ipc.1.query.1",
+      "*ipc.1.interface_manager.1",
+      "*dm.1.packages.1",
+      "*key_vault.1.cipher.1"
     ]
   },
   "status": 200
@@ -450,7 +489,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 Install the sprinkler.1 in the address 134574080 [0x08057000] from the Blob storage (**source_type:1**), use the copied **Blob SAS URL** as `package_name`.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.packages.1.install" --mp "{\"source_type\":1,\"address\":134574080,\"package_name\":\"https://mystorage.blob.core.windows.net/packages/sprinkler.1.bin?sp=r&st=2021-05-17T22:11:04Z&se=2021-05-25T06:11:04Z&sv=2020-02-10&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\"source_type\":1,\"address\":134574080,\"package_name\":\"https://mystorage.blob.core.windows.net/packages/sprinkler.1.bin?sp=r&st=2021-05-17T22:11:04Z&se=2021-05-25T06:11:04Z&sv=2020-02-10&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}" 
 
 // expected outcome
 {
@@ -461,18 +500,18 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
 
 Query for existing interfaces on the device. You should be able to see the newly installed key_vault and sprinkler interfaces.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.query.1.query" --mp "{}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.*.query.1:query" --mp "{}"
 
 // expected outcome
 {
   "payload": {
     "continuation_token": 655615,
     "result": [
-      "+ipc.1.query.1",
-      "+ipc.1.interface_manager.1",
-      "+dm.1.packages.1",
-      "+key_vault.1.cipher.1",
-      "+sprinkler.1.sprinkler.1"
+      "*ipc.1.query.1",
+      "*ipc.1.interface_manager.1",
+      "*dm.1.packages.1",
+      "*key_vault.1.cipher.1",
+      "*sprinkler.1.sprinkler.1"
     ]
   },
   "status": 200
@@ -492,7 +531,7 @@ The commands are different for Powershell because you have to use ` to escape an
 
 If you have sprinkler.1 installed, uninstall it before trying to install the new package from Blobs.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.packages.1.uninstall" --mp "{\`"package_name\`":\`"sprinkler.1\`"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:uninstall" --mp "{\`"package_name\`":\`"sprinkler.1\`"}" 
 
 // expected outcome: Azure CLI
 {
@@ -504,17 +543,17 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
 Query for existing interfaces on the device to make sure that you don't have the sprinkler.1 interface anymore.
 
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.query.1.query" --mp "{}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.*.query.1:query" --mp "{}"
 
 // expected outcome
 {
   "payload": {
     "continuation_token": 655615,
     "result": [
-      "+ipc.1.query.1",
-      "+ipc.1.interface_manager.1",
-      "+dm.1.packages.1",
-      "+key_vault.1.cipher.1"
+      "*ipc.1.query.1",
+      "*ipc.1.interface_manager.1",
+      "*dm.1.packages.1",
+      "*key_vault.1.cipher.1"
     ]
   },
   "status": 200
@@ -524,7 +563,7 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 Install the sprinkler.1 in the address 134574080 [0x08057000] from the Blob storage (**source_type:1**), use the copied **Blob SAS URL** as `package_name`.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.packages.1.install" --mp "{\`"source_type\`":1,\`"address\`":134574080,\`"package_name\`":\`"https://mystorage.blob.core.windows.net/packages/sprinkler.1.bin?sp=r&st=2021-05-17T22:11:04Z&se=2021-05-25T06:11:04Z&sv=2020-02-10&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\`"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\`"source_type\`":1,\`"address\`":134574080,\`"package_name\`":\`"https://mystorage.blob.core.windows.net/packages/sprinkler.1.bin?sp=r&st=2021-05-17T22:11:04Z&se=2021-05-25T06:11:04Z&sv=2020-02-10&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\`"}" 
 
 // expected outcome
 {
@@ -535,18 +574,18 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm
 
 Query for existing interfaces on the device. You should be able to see the newly installed key_vault and sprinkler interfaces.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.query.1.query" --mp "{}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ipc.*.query.1:query" --mp "{}"
 
 // expected outcome
 {
   "payload": {
     "continuation_token": 655615,
     "result": [
-      "+ipc.1.query.1",
-      "+ipc.1.interface_manager.1",
-      "+dm.1.packages.1",
-      "+key_vault.1.cipher.1",
-      "+sprinkler.1.sprinkler.1"
+      "*ipc.1.query.1",
+      "*ipc.1.interface_manager.1",
+      "*dm.1.packages.1",
+      "*key_vault.1.cipher.1",
+      "*sprinkler.1.sprinkler.1"
     ]
   },
   "status": 200
@@ -556,6 +595,9 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 </details>
 <br>
 
+## Safe package update
+
+One of the advantages of using DCF is the safe package update mechanism. It allows developers and administrators to test new packages on the devices before officially switching, It also supports rollback to the old package if necessary. The tutorial [How to safe update a DCF package](DCF_Safe_Update.md) will take you through this process using 2 versions of the key_vault package created in this tutorial. 
 
 ## Creating Your Own Package
 
