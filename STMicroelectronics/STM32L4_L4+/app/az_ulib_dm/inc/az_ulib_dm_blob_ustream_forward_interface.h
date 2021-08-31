@@ -37,6 +37,9 @@ typedef struct az_blob_http_cb_tag
 
     /** The #NX_PACKET* pointing to the data associated with the http response. */
     NX_PACKET* packet_ptr;
+
+    /** The #offset_t to keep track of read offsets within a given packet.*/
+    offset_t read_offset;
   } _internal;
 } az_blob_http_cb;
 
