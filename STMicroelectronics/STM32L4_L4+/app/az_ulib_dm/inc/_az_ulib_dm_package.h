@@ -53,7 +53,7 @@ typedef az_result (*_az_ulib_dm_package_unpublish_interface)(const az_ulib_ipc_t
  * Define the overlay for the module's preamble.
  */
 
-/** Module ID. It shall be _AZ_ULIB_DM_PACKAGE_ID (0x54584D44). */
+/** Module ID. It shall be _AZ_ULIB_DM_PACKAGE_ID (0x4D4F4455). */
 #define _AZ_ULIB_DM_PACKAGE_PREAMBLE_ID 0
 
 /** Major Version ID.*/
