@@ -5,7 +5,6 @@
 #include "_az_ulib_dm_blob.h"
 #include "_az_ulib_dm_interface.h"
 #include "az_ulib_dm_api.h"
-#include "az_ulib_registry_api.h"
 #include "az_ulib_ipc_api.h"
 #include "az_ulib_ipc_interface.h"
 #include "az_ulib_pal_os_api.h"

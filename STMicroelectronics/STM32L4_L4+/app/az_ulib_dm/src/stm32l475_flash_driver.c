@@ -19,13 +19,25 @@ static union
   unsigned char write_buffer_char[8];
 } write_buffer;
 
+static int remainder_count;
+static int total_write_size;
+static int write_size;
+
+void internal_flash_flush()
+{
+  // set internal variable
+  total_write_size = 0;
+  remainder_count = -1;
+  write_size = 0;
+}
+
 HAL_StatusTypeDef internal_flash_write_doubleword(uint32_t destination, uint64_t source)
 {
   HAL_FLASH_Unlock();
-  if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, destination, source) != HAL_OK)
+  if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, destination, source) != HAL_OK)
   {
-      HAL_FLASH_Lock();
-      return HAL_ERROR;
+    HAL_FLASH_Lock();
+    return HAL_ERROR;
   }
   HAL_FLASH_Lock();
   return HAL_OK;
@@ -37,10 +49,31 @@ HAL_StatusTypeDef internal_flash_write(
     unsigned char* source_ptr,
     uint32_t size)
 {
-  int remainder_count = 0;
+
   HAL_StatusTypeDef status;
 
+  write_size += size;
+
+  for (; (remainder_count >= 0) && (remainder_count < 8) && (size > 0); destination_ptr++, size--)
+  {
+    write_buffer.write_buffer_char[remainder_count++] = *source_ptr++;
+  }
+
   HAL_FLASH_Unlock();
+
+  if (remainder_count == 8)
+  {
+    status = HAL_FLASH_Program(
+        FLASH_TYPEPROGRAM_DOUBLEWORD,
+        (uint32_t)(destination_ptr - 8),
+        write_buffer.write_buffer_int64);
+    if (status != HAL_OK)
+    {
+      HAL_FLASH_Lock();
+      return status;
+    }
+    remainder_count = -1;
+  }
 
   for (; size > 8; size -= 8, destination_ptr += 8, source_ptr += 8)
   {
@@ -63,7 +96,7 @@ HAL_StatusTypeDef internal_flash_write(
     write_buffer.write_buffer_char[remainder_count++] = *source_ptr++;
     destination_ptr++;
   }
-  if ((remainder_count >= 0))
+  if ((remainder_count >= 0) && (write_size >= total_write_size))
   {
     while (remainder_count < 8)
     {
@@ -126,6 +159,11 @@ HAL_StatusTypeDef internal_flash_erase(unsigned char* destination_ptr, uint32_t 
   // Lock flash
   HAL_FLASH_OB_Lock();
   HAL_FLASH_Lock();
+
+  // set internal variable
+  total_write_size = size;
+  remainder_count = -1;
+  write_size = 0;
 
   return status;
 }
