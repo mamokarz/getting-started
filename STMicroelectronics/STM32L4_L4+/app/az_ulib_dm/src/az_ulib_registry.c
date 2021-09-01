@@ -14,18 +14,25 @@
 #include <stdint.h>
 #include <string.h>
 
+/* Variables to access info about flash sections allocated via the linker */
 extern uint32_t __REGISTRYINFO;
 extern uint32_t __REGISTRY;
+extern uint32_t __SIZEOF_REGISTRYINFO;
+extern uint32_t __SIZEOF_REGISTRY;
+
+/* Each az_ulib_registry_node is 32 bytes. RegistryInfo is a 2k section in FLASH */
+#define AZ_ULIB_REGISTRY_NODE_SIZE 32
+#define MAX_AZ_ULIB_REGISTRY_ENTRIES \
+  ((uint32_t)(&__SIZEOF_REGISTRYINFO)) / AZ_ULIB_REGISTRY_NODE_SIZE
+#define MAX_AZ_ULIB_REGISTRY_BUFFER (uint32_t)(&__SIZEOF_REGISTRY)
+#define AZ_ULIB_REGISTRY_FLAG_SIZE 8 // in bytes
+
+/* az_ulib_registry_node status flags */
+#define REGISTRY_FREE 0xFFFFFFFFFFFFFFFF
+#define REGISTRY_READY 0x0000000000000000
+#define REGISTRY_DELETED 0x0000000000000000
 
 static az_ulib_pal_os_lock registry_lock;
-
-/* Static helper function declarations */
-static az_result result_from_hal_status(HAL_StatusTypeDef status);
-static az_result set_registry_node_ready_flag(uint8_t* address);
-static az_result set_registry_node_delete_flag(uint8_t* address);
-static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_ptr);
-static bool is_empty_buf(uint8_t* test_buf, int32_t buf_size);
-static uint8_t* flash_buf_get();
 
 static az_result result_from_hal_status(HAL_StatusTypeDef status)
 {
@@ -94,6 +101,7 @@ static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_
         (uint8_t*)(runner) + (2 * AZ_ULIB_REGISTRY_FLAG_SIZE), // add size of flags
         (uint8_t*)&(node._internal.key),
         (2 * sizeof(node._internal.key)))));
+    internal_flash_flush();
 
     /* Return pointer to this node for setting flags later */
     *node_ptr = (uint8_t*)runner;
@@ -126,12 +134,22 @@ static uint8_t* flash_buf_get()
     runner++;
   }
 
-  /* Last_node should have reference to the last node in available memory, with rounded address. */
-  int32_t value_buf_size;
-  value_buf_size = ((((az_span_size(last_node->_internal.value) - 1) >> 3) + 1) << 3);
+  /* In case registry is empty */
+  if (last_node == (az_ulib_registry_node*)(&__REGISTRYINFO)
+      && last_node->_internal.ready_flag == REGISTRY_FREE)
+  {
+    flash_ptr = (uint8_t*)&__REGISTRY;
+  }
+  else
+  {
+    /* Last_node should have reference to the last node in available memory, with rounded address.
+     */
+    int32_t value_buf_size;
+    value_buf_size = ((((az_span_size(last_node->_internal.value) - 1) >> 3) + 1) << 3);
 
-  /* Calculate final flash_ptr */
-  flash_ptr = az_span_ptr(last_node->_internal.value) + value_buf_size;
+    /* Calculate final flash_ptr */
+    flash_ptr = az_span_ptr(last_node->_internal.value) + value_buf_size;
+  }
 
   return flash_ptr;
 }
@@ -263,10 +281,12 @@ AZ_NODISCARD az_result az_ulib_registry_add(az_span key, az_span value)
     /* Write key to flash */
     AZ_ULIB_THROW_IF_AZ_ERROR(result_from_hal_status(
         internal_flash_write(key_dest_ptr, az_span_ptr(key), az_span_size(key))));
+    internal_flash_flush();
 
     /* Write value to flash */
     AZ_ULIB_THROW_IF_AZ_ERROR(result_from_hal_status(
         internal_flash_write(val_dest_ptr, az_span_ptr(value), az_span_size(value))));
+    internal_flash_flush();
 
     /* After successful storage of registry node and actual key value pair, set flag in node to
     indicate the entry is now ready to use.  */

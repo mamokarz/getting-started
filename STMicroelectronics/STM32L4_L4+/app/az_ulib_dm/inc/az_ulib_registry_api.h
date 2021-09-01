@@ -24,21 +24,6 @@
 
 #include "azure/core/_az_cfg_prefix.h"
 
-/* Variables to access size of flash sections allocated in linker */
-extern uint32_t __SIZEOF_REGISTRYINFO;
-extern uint32_t __SIZEOF_REGISTRY;
-
-/* Each az_ulib_registry_node is 32 bytes. RegistryInfo is a 2k section in FLASH */
-#define AZ_ULIB_REGISTRY_NODE_SIZE 32
-#define MAX_AZ_ULIB_REGISTRY_ENTRIES \
-  ((uint32_t)(&__SIZEOF_REGISTRYINFO)) / AZ_ULIB_REGISTRY_NODE_SIZE
-#define MAX_AZ_ULIB_REGISTRY_BUFFER (uint32_t)(&__SIZEOF_REGISTRY)
-#define AZ_ULIB_REGISTRY_FLAG_SIZE 8 // in bytes
-
-#define REGISTRY_FREE 0xFFFFFFFFFFFFFFFF
-#define REGISTRY_READY 0x0000000000000000
-#define REGISTRY_DELETED 0x0000000000000000
-
 /**
  * @brief   Structure for the registry control node.
  *
