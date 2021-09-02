@@ -95,7 +95,7 @@ static az_result split_url(
         ((next = slice_next_char(url, next + 1, '/', container)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
     /* Get directories, if it exists. */
-    if((next = slice_latest_char(url, next + 1, '/', directories)) == -1)
+    if ((next = slice_latest_char(url, next + 1, '/', directories)) == -1)
     {
       *directories = AZ_SPAN_EMPTY;
     }
@@ -169,16 +169,54 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status)
   }
 }
 
-static az_result write_ustream_forward_to_flash(az_ulib_ustream_forward* ustream_forward, void* address)
+typedef struct
+{
+  void* address;
+} flush_write_to_flash_context;
+
+// flush callback to write package to flash
+static az_result flush_callback(
+    const uint8_t* const buffer,
+    size_t size,
+    az_ulib_callback_context flush_callback_context)
+{
+  az_result result;
+  HAL_StatusTypeDef hal_status;
+
+  // handle buffer
+  flush_write_to_flash_context* flush_context
+      = (flush_write_to_flash_context*)flush_callback_context;
+
+  // write to flash if we have not reached the end of this chunk of data
+  if ((hal_status = internal_flash_write((uint8_t*)flush_context->address, (uint8_t*)buffer, size))
+      != HAL_OK)
+  {
+    result = result_from_hal_status(hal_status);
+  }
+
+  else
+  {
+    result = AZ_OK;
+  }
+
+  // adjust offset
+  flush_context->address += size;
+
+  return result;
+}
+
+static az_result write_ustream_forward_to_flash(
+    az_ulib_ustream_forward* ustream_forward,
+    void* address)
 {
   az_result result;
   HAL_StatusTypeDef hal_status;
 
   size_t ustream_forward_size = 0;
-  static uint8_t local_buffer[256] = { 0 };
+  flush_write_to_flash_context flush_context = { address };
 
   ustream_forward_size = az_ulib_ustream_forward_get_size(ustream_forward);
-  
+
   // erase flash
   if ((hal_status = internal_flash_erase((UCHAR*)address, ustream_forward_size)) != HAL_OK)
   {
@@ -188,23 +226,8 @@ static az_result write_ustream_forward_to_flash(az_ulib_ustream_forward* ustream
   // start ustream data transfer from blob client
   else
   {
-    do
-    {
-      // grab next buffer-full from ustream_forward
-      if ((result = az_ulib_ustream_forward_read(
-                ustream_forward, local_buffer, sizeof(local_buffer), &ustream_forward_size))
-          == AZ_OK) // should not use EOF
-      {
-        // write to flash if we have not reached the end of this chunk of data
-        if ((hal_status = internal_flash_write((uint8_t*)address, local_buffer, ustream_forward_size))
-            != HAL_OK)
-        {
-          result = result_from_hal_status(hal_status);
-        }
-        // increment the write address by the last write-size
-        address += ustream_forward_size;
-      }
-    } while (result == AZ_OK);
+    // flush blob client data to flash
+    result = az_ulib_ustream_forward_flush(ustream_forward, flush_callback, &flush_context);
   }
 
   if (result == AZ_ULIB_EOF)
@@ -227,13 +250,7 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
 
     // create ustream_forward and blob client
     AZ_ULIB_THROW_IF_AZ_ERROR(az_blob_create_ustream_forward_from_blob(
-        &ustream_forward,
-        NULL,
-        &blob_http_cb,
-        NULL,
-        ip,
-        (int8_t*)resource,
-        (int8_t*)host));
+        &ustream_forward, NULL, &blob_http_cb, NULL, ip, (int8_t*)resource, (int8_t*)host));
 
     // use ustream_forward to write blob package to flash
     AZ_ULIB_THROW_IF_AZ_ERROR(write_ustream_forward_to_flash(&ustream_forward, address));

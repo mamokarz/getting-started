@@ -8,10 +8,10 @@
 #include <string.h>
 
 #include "_az_nx_blob_client.h"
-#include "az_ulib_ustream_forward.h"
 #include "az_ulib_dm_blob_ustream_forward_interface.h"
 #include "az_ulib_port.h"
 #include "az_ulib_result.h"
+#include "az_ulib_ustream_forward.h"
 #include "azure/core/az_span.h"
 
 #include <azure/core/internal/az_precondition_internal.h>
@@ -32,30 +32,28 @@
 #else
 #define IGNORE_POINTER_TYPE_QUALIFICATION __pragma(warning(push));
 #define IGNORE_MEMCPY_TO_NULL \
-  __pragma(warning(push));  \
-  __pragma(warning(suppress: 6387));
+  __pragma(warning(push));    \
+  __pragma(warning(suppress : 6387));
 #define RESUME_WARNINGS __pragma(warning(pop));
 #endif // __clang__
 
 static az_result concrete_flush(
     az_ulib_ustream_forward* ustream_forward,
-    az_ulib_flush_callback flush_callback, 
+    az_ulib_flush_callback flush_callback,
     az_ulib_callback_context flush_callback_context);
 static az_result concrete_read(
     az_ulib_ustream_forward* ustream_forward,
     uint8_t* const buffer,
     size_t buffer_length,
     size_t* const size);
-static size_t concrete_get_size(
-    az_ulib_ustream_forward* ustream_forward);
-static az_result concrete_dispose(
-    az_ulib_ustream_forward* ustream_forward);
+static size_t concrete_get_size(az_ulib_ustream_forward* ustream_forward);
+static az_result concrete_dispose(az_ulib_ustream_forward* ustream_forward);
 static const az_ulib_ustream_forward_interface api
-    = { concrete_flush, concrete_read,  concrete_get_size, concrete_dispose };
+    = { concrete_flush, concrete_read, concrete_get_size, concrete_dispose };
 
 static az_result concrete_flush(
     az_ulib_ustream_forward* ustream_forward,
-    az_ulib_flush_callback flush_callback, 
+    az_ulib_flush_callback flush_callback,
     az_ulib_callback_context flush_callback_context)
 {
   // precondition checks
@@ -63,16 +61,51 @@ static az_result concrete_flush(
   _az_PRECONDITION(AZ_ULIB_USTREAM_FORWARD_IS_TYPE_OF(ustream_forward, api));
   _az_PRECONDITION_NOT_NULL(flush_callback);
 
-  // get size of data
-  size_t buffer_size = concrete_get_size(ustream_forward);
+  az_result result = AZ_OK;
+  az_blob_http_cb* blob_http_cb = (az_blob_http_cb*)ustream_forward->_internal.ptr;
 
-  // point to data
-  const uint8_t* buffer = (const uint8_t*)ustream_forward->_internal.ptr;
+  // loop over all packets in data to grab from blob
+  do
+  {
+    if ((result == AZ_OK) || (result == AZ_ULIB_EOF))
+    {
+      // point to packet data
+      const uint8_t* buffer
+          = (const uint8_t*)blob_http_cb->_internal.packet_ptr->nx_packet_prepend_ptr;
 
-  // invoke callback
-  (*flush_callback)(buffer, buffer_size, flush_callback_context);
+      // invoke callback
+      az_result hal_result;
+      if ((hal_result = (*flush_callback)(
+               buffer,
+               (size_t)blob_http_cb->_internal.packet_ptr->nx_packet_length,
+               flush_callback_context))
+          != AZ_OK)
+      {
+        result = hal_result;
+        break;
+      }
 
-  return AZ_OK;
+      // increase inner current position
+      ustream_forward->_internal.inner_current_position
+          += (offset_t)blob_http_cb->_internal.packet_ptr->nx_packet_length;
+    }
+
+    // exit on error or end of file
+    if (result != AZ_OK)
+    {
+      break;
+    }
+
+    // grab next chunk from blob client
+    result = _az_nx_blob_client_grab_chunk(
+        &blob_http_cb->_internal.http_client,
+        &blob_http_cb->_internal.packet_ptr,
+        BLOB_CLIENT_NX_API_WAIT_TIME);
+
+  } while (ustream_forward->_internal.inner_current_position
+           != (offset_t)blob_http_cb->_internal.packet_ptr->nx_packet_length);
+
+  return result;
 }
 
 static az_result concrete_read(
@@ -81,7 +114,7 @@ static az_result concrete_read(
     size_t buffer_length,
     size_t* const size)
 {
- _az_PRECONDITION(AZ_ULIB_USTREAM_FORWARD_IS_TYPE_OF(ustream_forward, api));
+  _az_PRECONDITION(AZ_ULIB_USTREAM_FORWARD_IS_TYPE_OF(ustream_forward, api));
   _az_PRECONDITION_NOT_NULL(buffer);
   _az_PRECONDITION(buffer_length > 0);
   _az_PRECONDITION_NOT_NULL(size);
@@ -142,7 +175,7 @@ static az_result concrete_read(
         result = AZ_OK;
       }
 
-      // All bytes in the current packet was consumed.
+      // All bytes in the current packet were consumed.
       else
       {
         // increase current position by size of last chunk
@@ -196,8 +229,8 @@ static az_result concrete_dispose(az_ulib_ustream_forward* ustream_forward)
   {
     // dispose of blob http control block
     az_blob_http_cb* blob_http_cb = (az_blob_http_cb*)ustream_forward->_internal.ptr;
-      AZ_ULIB_THROW_IF_AZ_ERROR(_az_nx_blob_client_dispose(
-          &blob_http_cb->_internal.http_client, &blob_http_cb->_internal.packet_ptr));
+    AZ_ULIB_THROW_IF_AZ_ERROR(_az_nx_blob_client_dispose(
+        &blob_http_cb->_internal.http_client, &blob_http_cb->_internal.packet_ptr));
 
     if (ustream_forward->_internal.data_release)
     {
@@ -212,9 +245,9 @@ static az_result concrete_dispose(az_ulib_ustream_forward* ustream_forward)
       ustream_forward->_internal.ustream_forward_release(ustream_forward);
     }
   }
-  AZ_ULIB_CATCH(...) {} 
+  AZ_ULIB_CATCH(...) {}
 
-    return AZ_ULIB_TRY_RESULT;
+  return AZ_ULIB_TRY_RESULT;
 }
 
 AZ_NODISCARD az_result az_ulib_ustream_forward_init(
@@ -277,12 +310,11 @@ AZ_NODISCARD az_result az_blob_create_ustream_forward_from_blob(
 
     // initialize ustream
     AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ustream_forward_init(
-      ustream_forward,
-      ustream_forward_release_callback,
-      (const uint8_t*)blob_http_cb,
-      package_size,
-      blob_http_cb_release_callback
-    ));
+        ustream_forward,
+        ustream_forward_release_callback,
+        (const uint8_t*)blob_http_cb,
+        package_size,
+        blob_http_cb_release_callback));
   }
   AZ_ULIB_CATCH(...) {}
 

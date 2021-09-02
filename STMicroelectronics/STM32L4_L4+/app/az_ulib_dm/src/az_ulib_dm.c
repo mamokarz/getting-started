@@ -87,7 +87,7 @@ static az_result install_in_memory(void* base_address, az_span package_name)
 {
   AZ_ULIB_TRY
   {
-    /* Is this a knowing package? */
+    /* Is this a known package? */
     AZ_ULIB_THROW_IF_ERROR(
         (*(uint32_t*)base_address == 0x4D4F4455), AZ_ERROR_ULIB_INCOMPATIBLE_VERSION);
 
