@@ -130,6 +130,8 @@ static az_result install_in_memory(void* base_address, az_span package_name)
 {
   AZ_ULIB_TRY
   {
+    uint32_t* preamble = (uint32_t*)base_address;
+    
     /* Is this a known package? */
     AZ_ULIB_THROW_IF_ERROR(
         (*(preamble + _AZ_ULIB_DM_PACKAGE_PREAMBLE_ID) == _AZ_ULIB_DM_PACKAGE_ID),
