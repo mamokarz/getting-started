@@ -25,6 +25,21 @@
 #include "azure/core/_az_cfg_prefix.h"
 
 /**
+ * @brief Struct including two #az_span that each contains a pointer and a size for each key and
+ * value to be stored in the flash. Used exclusively in az_ulib_registry_node structs.
+ */
+typedef struct
+{
+  /** The #az_span that contains a pointer to a location in flash storing the key char string and
+   * the string's size.*/
+  az_span key;
+
+  /** The #az_span that contains pointer to a location in flash storing the value char string and
+   * the string's size.*/
+  az_span value;
+} az_ulib_registry_key_value_ptrs;
+
+/**
  * @brief   Structure for the registry control node.
  *
  * Every entry into the registry of the device will have a registry control node that contains
@@ -39,14 +54,7 @@ typedef struct
      * are set, the node is deleted and cannot be used again. */
     uint64_t ready_flag;
     uint64_t delete_flag;
-
-    /** The #az_span that contains a pointer to a location in flash storing the key char string and
-     * the string's size.*/
-    az_span key;
-
-    /** The #az_span that contains pointer to a location in flash storing the value char string and
-     * the string's size.*/
-    az_span value;
+    az_ulib_registry_key_value_ptrs key_value_ptrs;
   } _internal;
 } az_ulib_registry_node;
 
