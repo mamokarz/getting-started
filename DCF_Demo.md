@@ -64,7 +64,7 @@ The current example produces the key_vault.1, key_vault.2 and sprinkler.1 packag
   .\build\samples\sprinkler.1\sprinkler.1.bin
 ```
 
-All packages use Position Independent Code (PIC), so they can be installed in any available memory in the MCU. For example, you may install key_vault.1 in the address 0x08050000, and sprinkler.1 in the address 0x08057000.
+All packages use Position Independent Code (PIC), so they can be installed in any available memory in the MCU. For example, you may install key_vault.1 in the address 0x08050000, and sprinkler.1 in the address 0x08057000. The DM reserves the first 320K of Flash for the RTOS, so, you can chose any memory starting at 0x08050000.
 
 ### Upload Binary to MCU Flash
 
@@ -487,9 +487,9 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 ```
 
-Install the sprinkler.1 in the address 134574080 [0x08057000] from the Blob storage (**source_type:1**), use the copied **Blob SAS URL** as `package_name`.
+Install the sprinkler.1 from the Blob storage (**source_type:1**), use the copied **Blob SAS URL** as `package_name`. Because we are not providing any specific address, the DM will choose one for us.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\"source_type\":1,\"address\":134574080,\"package_name\":\"https://mystorage.blob.core.windows.net/packages/sprinkler.1.bin?sp=r&st=2021-05-17T22:11:04Z&se=2021-05-25T06:11:04Z&sv=2020-02-10&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\"source_type\":1,\"package_name\":\"https://mystorage.blob.core.windows.net/packages/sprinkler.1.bin?sp=r&st=2021-05-17T22:11:04Z&se=2021-05-25T06:11:04Z&sv=2020-02-10&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}" 
 
 // expected outcome
 {
@@ -561,9 +561,9 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 
 ```
 
-Install the sprinkler.1 in the address 134574080 [0x08057000] from the Blob storage (**source_type:1**), use the copied **Blob SAS URL** as `package_name`.
+Install the sprinkler.1 from the Blob storage (**source_type:1**) and use the copied **Blob SAS URL** as `package_name`. Because we are not providing any specific address, the DM will choose one for us.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\`"source_type\`":1,\`"address\`":134574080,\`"package_name\`":\`"https://mystorage.blob.core.windows.net/packages/sprinkler.1.bin?sp=r&st=2021-05-17T22:11:04Z&se=2021-05-25T06:11:04Z&sv=2020-02-10&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\`"}" 
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\`"source_type\`":1,\`"package_name\`":\`"https://mystorage.blob.core.windows.net/packages/sprinkler.1.bin?sp=r&st=2021-05-17T22:11:04Z&se=2021-05-25T06:11:04Z&sv=2020-02-10&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\`"}" 
 
 // expected outcome
 {

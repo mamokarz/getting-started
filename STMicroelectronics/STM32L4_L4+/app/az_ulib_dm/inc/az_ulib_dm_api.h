@@ -13,6 +13,7 @@
 #ifndef AZ_ULIB_DM_API_H
 #define AZ_ULIB_DM_API_H
 
+#include "_az_ulib_dm_package.h"
 #include "az_ulib_pal_os_api.h"
 #include "az_ulib_port.h"
 #include "az_ulib_result.h"
@@ -27,21 +28,10 @@
 
 #include "azure/core/_az_cfg_prefix.h"
 
-#define AZ_ULIB_CONFIG_MAX_DM_PACKAGES 5
-#define AZ_ULIB_CONFIG_MAX_DM_PACKAGE_NAME 32
-
-#define AZ_ULIB_DM_PACKAGE_SHELL_ENTRY_POINT 6
-#define AZ_ULIB_DM_PACKAGE_PUBLISH 16
-#define AZ_ULIB_DM_PACKAGE_UNPUBLISH 17
-#define AZ_ULIB_DM_PACKAGE_MAX_DATA_SIZE 0x100
-
-typedef struct
-{
-  az_span name;
-  uint8_t name_buf[AZ_ULIB_CONFIG_MAX_DM_PACKAGE_NAME];
-  uint8_t data[AZ_ULIB_DM_PACKAGE_MAX_DATA_SIZE];
-  void* address;
-} _az_ulib_dm_package;
+/**
+ * @brief Define the maximun number of packages in the DM.
+ */
+#define AZ_ULIB_CONFIG_MAX_DM_PACKAGES 10
 
 /**
  * @brief DM handle.
