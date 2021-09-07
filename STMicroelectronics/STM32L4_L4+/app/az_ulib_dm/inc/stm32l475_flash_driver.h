@@ -14,7 +14,7 @@ extern "C"
 
 void internal_flash_flush();
 
-HAL_StatusTypeDef internal_flash_write_doubleword(uint32_t destination, uint64_t source);
+HAL_StatusTypeDef internal_flash_write_doubleword(uint8_t* destination, uint64_t source);
 
 HAL_StatusTypeDef internal_flash_write(
     unsigned char* destination_ptr, unsigned char* source_ptr, uint32_t size);

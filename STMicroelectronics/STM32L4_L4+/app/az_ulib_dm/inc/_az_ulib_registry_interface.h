@@ -2,11 +2,6 @@
 // Licensed under the MIT license.
 // See LICENSE file in the project root for full license information.
 
-/********************************************************************
- * This code was auto-generated from az_registry DL and shall not be
- * modified.
- ********************************************************************/
-
 #ifndef _az_ULIB_REGISTRY_INTERFACE_H
 #define _az_ULIB_REGISTRY_INTERFACE_H
 

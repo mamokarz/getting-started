@@ -7,7 +7,7 @@
  *
  * @brief   The Registry Editor.
  *
- * The Registry Editor is capable of storing key value pairs and stored into flash.
+ * The Registry Editor is capable of storing key value pairs into device flash.
  */
 
 #ifndef AZ_ULIB_REGISTRY_API_H
@@ -60,7 +60,6 @@ typedef struct
  * @param[in]   value                The #az_span value corresponding to the input key.
  *
  * @pre         \p key                            shall not be `#AZ_SPAN_EMPTY`.
- * @pre         \p sizeof(key)                    shall greater than zero.
  *
  * @return The #az_result with the result of the registry operations.
  *      @retval #AZ_OK                        If retrieving a value from the registry was
@@ -80,9 +79,7 @@ AZ_NODISCARD az_result az_ulib_registry_try_get_value(az_span key, az_span* valu
  * @param[in]   value                The #az_span value to add to the registry.
  *
  * @pre         \p key                            shall not be `#AZ_SPAN_EMPTY`.
- * @pre         \p sizeof(key)                    shall greater than zero.
  * @pre         \p value                          shall not be `#AZ_SPAN_EMPTY`.
- * @pre         \p sizeof(value)                  shall greater than zero.
  *
  * @return The #az_result with the result of the registry operations.
  *      @retval #AZ_OK                            If adding a value to the registry was successful.
@@ -107,11 +104,10 @@ AZ_NODISCARD az_result az_ulib_registry_add(az_span key, az_span value);
  * @param[in]   key                  The #az_span key to remove from the registry.
  *
  * @pre         \p key                            shall not be `#AZ_SPAN_EMPTY`.
- * @pre         \p sizeof(key)                    shall greater than zero.
  *
  * @return The #az_result with the result of the registry operations.
- *      @retval #AZ_OK                            If removing a value to the registry was
- * successful.
+ *      @retval #AZ_OK                            If removing a value from the registry was
+ *                                                successful.
  *      @retval #AZ_ERROR_ULIB_SYSTEM             If the `az_ulib_registry_delete` operation failed
  *                                                on the system level.
  *      @retval #AZ_ERROR_ULIB_BUSY               If the resources necesary for the
