@@ -20,10 +20,8 @@ extern uint32_t __REGISTRY;
 extern uint32_t __SIZEOF_REGISTRYINFO;
 extern uint32_t __SIZEOF_REGISTRY;
 
-/* Each az_ulib_registry_node is 32 bytes. RegistryInfo is a 2k section in FLASH */
-#define AZ_ULIB_REGISTRY_NODE_SIZE 32
 #define MAX_AZ_ULIB_REGISTRY_ENTRIES \
-  ((uint32_t)(&__SIZEOF_REGISTRYINFO)) / AZ_ULIB_REGISTRY_NODE_SIZE
+  ((uint32_t)(&__SIZEOF_REGISTRYINFO)) / sizeof(az_ulib_registry_node)
 #define MAX_AZ_ULIB_REGISTRY_BUFFER (uint32_t)(&__SIZEOF_REGISTRY)
 #define AZ_ULIB_REGISTRY_FLAG_SIZE 8 // in bytes
 
@@ -53,20 +51,35 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status)
 
 static az_result set_registry_node_ready_flag(uint8_t* address)
 {
-  return result_from_hal_status(internal_flash_write_doubleword((uint32_t)address, REGISTRY_READY));
+  return result_from_hal_status(internal_flash_write_doubleword(address, REGISTRY_READY));
 }
 
 static az_result set_registry_node_delete_flag(uint8_t* address)
 {
-  return result_from_hal_status(internal_flash_write_doubleword(
-      ((uint32_t)address + AZ_ULIB_REGISTRY_FLAG_SIZE), REGISTRY_DELETED));
+  return result_from_hal_status(
+      internal_flash_write_doubleword((address + AZ_ULIB_REGISTRY_FLAG_SIZE), REGISTRY_DELETED));
 }
 
 static bool is_empty_buf(uint8_t* test_buf, int32_t buf_size)
 {
-  uint8_t buf[buf_size];
-  memset(buf, 0xFF, buf_size);
-  return (memcmp(test_buf, buf, buf_size) == 0);
+  while((buf_size) > 0)
+  {
+    if(*(uint32_t*)(test_buf) != 0xFFFFFFFF)
+    {
+      return false;
+    }
+    test_buf += 4;
+    buf_size -= 4;
+  }
+  return true;
+}
+
+static bool is_empty_node(az_ulib_registry_node* node)
+{
+  return node->_internal.ready_flag == REGISTRY_FREE
+      && node->_internal.delete_flag != REGISTRY_DELETED
+      && is_empty_buf((uint8_t*)&(node->_internal.key), sizeof(az_span))
+      && is_empty_buf((uint8_t*)&(node->_internal.value), sizeof(az_span));
 }
 
 static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_ptr)
@@ -82,10 +95,7 @@ static az_result store_registry_node(az_ulib_registry_node node, uint8_t** node_
     /* Look for next available spot */
     for (node_index = 0; node_index < MAX_AZ_ULIB_REGISTRY_ENTRIES; node_index++)
     {
-      if (runner->_internal.ready_flag == REGISTRY_FREE
-          && runner->_internal.delete_flag != REGISTRY_DELETED
-          && is_empty_buf((uint8_t*)&(runner->_internal.key), sizeof(az_span))
-          && is_empty_buf((uint8_t*)&(runner->_internal.value), sizeof(az_span)))
+      if (is_empty_node(runner))
       {
         break;
       }
@@ -154,6 +164,38 @@ static uint8_t* flash_buf_get()
   return flash_ptr;
 }
 
+static az_ulib_registry_node* find_node_in_registry(az_span key)
+{
+  /* Precondition check */
+  _az_PRECONDITION_VALID_SPAN(key, 1, false);
+
+  az_ulib_registry_node* runner;
+
+  /* Loop through registry for entry that matches the key */
+  runner = (az_ulib_registry_node*)(&__REGISTRYINFO);
+  for (uint32_t i = 0; i < MAX_AZ_ULIB_REGISTRY_ENTRIES; i++)
+  {
+    if(runner->_internal.delete_flag != REGISTRY_DELETED)
+    {
+      if (runner->_internal.ready_flag == REGISTRY_READY)
+      {
+        if (az_span_is_content_equal(key, runner->_internal.key))
+        {
+          break;
+        }
+      }
+      else
+      {
+        runner = NULL;
+        break;
+      }
+    }
+    runner++;
+  }
+
+  return runner;
+}
+
 void az_ulib_registry_init(void)
 {
   /* Initialize lock */
@@ -172,27 +214,19 @@ AZ_NODISCARD az_result az_ulib_registry_delete(az_span key)
   _az_PRECONDITION_VALID_SPAN(key, 1, false);
 
   az_result result;
-  az_ulib_registry_node* runner;
+  az_ulib_registry_node* matched_node;
 
-  /* Loop through registry for entry that matches the key */
-  runner = (az_ulib_registry_node*)(&__REGISTRYINFO);
-  for (uint32_t i = 0; i < MAX_AZ_ULIB_REGISTRY_ENTRIES; i++)
+  matched_node = find_node_in_registry(key);
+  if(matched_node == NULL)
   {
-    if (runner->_internal.ready_flag == REGISTRY_READY)
-    {
-      if (az_span_is_content_equal(key, runner->_internal.key))
-      {
-        result = set_registry_node_delete_flag((uint8_t*)runner);
-        break;
-      }
-    }
-    else
-    {
-      result = AZ_ERROR_ITEM_NOT_FOUND;
-      break;
-    }
-    runner++;
+    /* Item not found in registry */
+    result = AZ_ERROR_ITEM_NOT_FOUND;
   }
+  else
+  {
+    result = set_registry_node_delete_flag((uint8_t*)matched_node);
+  }
+
   return result;
 }
 
@@ -203,31 +237,17 @@ AZ_NODISCARD az_result az_ulib_registry_try_get_value(az_span key, az_span* valu
   _az_PRECONDITION_NOT_NULL(value);
 
   az_result result;
-  az_ulib_registry_node* runner;
+  az_ulib_registry_node* matched_node;
 
-  /* Find node containing key */
-  runner = (az_ulib_registry_node*)(&__REGISTRYINFO);
-  for (uint32_t i = 0; i < MAX_AZ_ULIB_REGISTRY_ENTRIES; i++)
+  matched_node = find_node_in_registry(key);
+  if(matched_node == NULL)
   {
-    if (runner->_internal.delete_flag != REGISTRY_DELETED)
-    {
-      /* If the content is not deleted and ready for use */
-      if (runner->_internal.ready_flag == REGISTRY_READY)
-      {
-        if (az_span_is_content_equal(key, runner->_internal.key))
-        {
-          *value = runner->_internal.value;
-          result = AZ_OK;
-          break;
-        }
-      }
-      else
-      {
-        result = AZ_ERROR_ITEM_NOT_FOUND;
-        break;
-      }
-    }
-    runner++;
+    result = AZ_ERROR_ITEM_NOT_FOUND;
+  }
+  else
+  {
+    *value = matched_node->_internal.value;
+    result = AZ_OK;
   }
 
   return result;

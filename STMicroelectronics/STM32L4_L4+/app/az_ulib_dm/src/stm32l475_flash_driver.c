@@ -31,10 +31,10 @@ void internal_flash_flush()
   write_size = 0;
 }
 
-HAL_StatusTypeDef internal_flash_write_doubleword(uint32_t destination, uint64_t source)
+HAL_StatusTypeDef internal_flash_write_doubleword(uint8_t* destination, uint64_t source)
 {
   HAL_FLASH_Unlock();
-  if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, destination, source) != HAL_OK)
+  if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t)destination, source) != HAL_OK)
   {
     HAL_FLASH_Lock();
     return HAL_ERROR;
@@ -167,3 +167,4 @@ HAL_StatusTypeDef internal_flash_erase(unsigned char* destination_ptr, uint32_t 
 
   return status;
 }
+ 
