@@ -8,9 +8,16 @@
 #include "stm32l4xx_hal.h"
 
 #ifdef __cplusplus
+#include <cstdint>
 extern "C"
 {
+#else
+#include <stdint.h>
 #endif
+
+void internal_flash_flush();
+
+HAL_StatusTypeDef internal_flash_write_doubleword(uint8_t* destination, uint64_t source);
 
 HAL_StatusTypeDef internal_flash_write(
     unsigned char* destination_ptr, unsigned char* source_ptr, uint32_t size);

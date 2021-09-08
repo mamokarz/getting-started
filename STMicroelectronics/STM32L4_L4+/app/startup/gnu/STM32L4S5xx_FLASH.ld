@@ -63,9 +63,11 @@ __RAM_segment_used_end__ = 0;
 /* Specify the memory areas */
 MEMORY
 {
-RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 640K
-FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 0x00050000
-DCF_PKG (rx)    : ORIGIN = 0x08050000, LENGTH = 0x001B0000
+RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 640K
+FLASH (rx)     : ORIGIN = 0x08000000, LENGTH = 0x0004E800
+REGISTRYINFO (rx)      : ORIGIN = 0x0804E800, LENGTH = 0x00000800
+REGISTRY (rx)  : ORIGIN = 0x0804F000, LENGTH = 0x00001000
+DCF_PKG (rx)   : ORIGIN = 0x08050000, LENGTH = 0x001B0000
 }
 
 /* Starting point of the DCF packages in the Flash. */
@@ -73,6 +75,12 @@ __DCF_PKG = ORIGIN(DCF_PKG);
 
 /* Size of the allocated buffer for DCF packages in the Flash. */
 __SIZEOF_DCF_PKG = LENGTH(DCF_PKG);
+
+/* Custom variables to be accessed from user C code */
+__REGISTRY = ORIGIN(REGISTRY);
+__REGISTRYINFO = ORIGIN(REGISTRYINFO);
+__SIZEOF_REGISTRY = LENGTH(REGISTRY);
+__SIZEOF_REGISTRYINFO = LENGTH(REGISTRYINFO);
 
 /* Define output sections */
 SECTIONS
@@ -204,8 +212,6 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM
-
-
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
