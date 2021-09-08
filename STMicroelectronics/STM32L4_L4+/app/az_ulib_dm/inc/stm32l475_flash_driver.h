@@ -6,11 +6,13 @@
 #define STM32L475_FLASH_DRIVER_H
 
 #include "stm32l4xx_hal.h"
-#include <stdint.h>
 
 #ifdef __cplusplus
+#include <cstdint>
 extern "C"
 {
+#else
+#include <stdint.h>
 #endif
 
 void internal_flash_flush();

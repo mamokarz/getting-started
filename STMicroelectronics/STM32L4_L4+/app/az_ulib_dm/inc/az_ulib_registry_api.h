@@ -136,6 +136,8 @@ void az_ulib_registry_init();
  * @brief   This function deinitializes the device registry.
  *
  * This function deinitializes components that the registry used. The registry can be reinitialized.
+ * This function is not thread safe and all other APIs shall release the resource before calling 
+ * the deinit() function. 
  */
 void az_ulib_registry_deinit();
 
