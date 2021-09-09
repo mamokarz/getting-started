@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 add_library(az_ulib_dm
-  ${CMAKE_CURRENT_LIST_DIR}/src/az_ulib_dm_blob_ustream_interface.c
+  ${CMAKE_CURRENT_LIST_DIR}/src/az_ulib_dm_blob_ustream_forward_interface.c
   ${CMAKE_CURRENT_LIST_DIR}/src/_az_ulib_dm_blob.c
   ${CMAKE_CURRENT_LIST_DIR}/src/_az_nx_blob_client.c
   ${CMAKE_CURRENT_LIST_DIR}/src/az_ulib_dm_interface.c
