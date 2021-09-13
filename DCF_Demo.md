@@ -428,7 +428,17 @@ Upload your binary to the `packages` container
 ![AZ_BLOB_UPLOAD_FILE](STMicroelectronics/STM32L4_L4+/media/azure_blob_upload_file.png)
 
 </details>
+
+<details>
+<summary>Update the blob account .</summary>
 <br>
+
+Under the `Settings > Configuration` panel, make sure you disable the `Security transfer required` option to enable blob download.
+
+![AZ_BLOB_ACCOUNT_SECURITY](STMicroelectronics/STM32L4_L4+/media/azure_blob_account_security.PNG)
+
+</details>
+
 
 <details>
 <summary>Create the URL with SAS for the package.</summary>
