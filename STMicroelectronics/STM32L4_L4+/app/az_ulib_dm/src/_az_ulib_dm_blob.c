@@ -95,11 +95,16 @@ static az_result split_url(
         ((next = slice_next_char(url, next + 1, '/', container)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
     /* Get directories, if it exists. */
+    int32_t old_next = next;
     if((next = slice_latest_char(url, next + 1, '/', directories)) == -1)
     {
-      *directories = AZ_SPAN_EMPTY;
+      next = old_next;
+      if (directories != NULL)
+      {
+        *directories = AZ_SPAN_EMPTY;
+      }
     }
-
+    
     /* Get file_name. */
     AZ_ULIB_THROW_IF_ERROR(
         ((next = slice_next_char(url, next + 1, '?', file_name)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
