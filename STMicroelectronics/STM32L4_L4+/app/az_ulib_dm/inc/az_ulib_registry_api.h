@@ -37,7 +37,7 @@ typedef struct
   /** The #az_span that contains pointer to a location in flash storing the value char string and
    * the string's size.*/
   az_span value;
-} az_ulib_registry_key_value_ptrs;
+} _az_ulib_registry_key_value_ptrs;
 
 /**
  * @brief   Structure for the registry control node.
@@ -54,7 +54,7 @@ typedef struct
      * are set, the node is deleted and cannot be used again. */
     uint64_t ready_flag;
     uint64_t delete_flag;
-    az_ulib_registry_key_value_ptrs key_value_ptrs;
+    _az_ulib_registry_key_value_ptrs key_value_ptrs;
   } _internal;
 } az_ulib_registry_node;
 
@@ -65,9 +65,10 @@ typedef struct
  * This function goes through the registry comparing keys until it finds one that matches the input.
  *
  * @param[in]   key                  The #az_span key to look for within the registry.
- * @param[in]   value                The #az_span value corresponding to the input key.
+ * @param[out]   value                The #az_span value corresponding to the input key.
  *
  * @pre         \p key                            shall not be `#AZ_SPAN_EMPTY`.
+ * @pre         \p value                          shall not be `NULL`.
  *
  * @return The #az_result with the result of the registry operations.
  *      @retval #AZ_OK                        If retrieving a value from the registry was

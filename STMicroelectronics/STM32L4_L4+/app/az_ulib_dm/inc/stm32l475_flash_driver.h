@@ -6,6 +6,7 @@
 #define STM32L475_FLASH_DRIVER_H
 
 #include "stm32l4xx_hal.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C"
