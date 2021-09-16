@@ -47,52 +47,23 @@ MEMORY
 {
 RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 96K
 RAM2 (xrw)      : ORIGIN = 0x10000000, LENGTH = 32K
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 1018K
-REGISTRYINFO (rx)      : ORIGIN = 0x80FE800, LENGTH = 2K
-REGISTRY (rx)      : ORIGIN = 0x80FF000, LENGTH = 4K
-}
-
-/* Custom variables to be accessed from user C code */
-__REGISTRY = ORIGIN(REGISTRY);
-__REGISTRYINFO = ORIGIN(REGISTRYINFO);
-__SIZEOF_REGISTRY = LENGTH(REGISTRY);
-__SIZEOF_REGISTRYINFO = LENGTH(REGISTRYINFO);
-=======
-FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 0x00050000
-=======
-FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 0x0004E800
-REGISTRYINFO (rx)      : ORIGIN = 0x0804E800, LENGTH = 0x00000800
-REGISTRY (rx)   : ORIGIN = 0x0804F000, LENGTH = 0x00001000
->>>>>>> 121bc60 (update PR comments)
-DCF_PKG (rx)    : ORIGIN = 0x08050000, LENGTH = 0x000B0000
-}
-
-=======
 FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 0x0004E800
 REGISTRYINFO (rx)      : ORIGIN = 0x0804E800, LENGTH = 0x00000800
 REGISTRY (rx)   : ORIGIN = 0x0804F000, LENGTH = 0x00001000
 DCF_PKG (rx)    : ORIGIN = 0x08050000, LENGTH = 0x000B0000
 }
 
->>>>>>> 2aadf94142c2561b5ab0f45e65c1206a8651604d
 /* Starting point of the DCF packages in the Flash. */
 __DCF_PKG = ORIGIN(DCF_PKG);
 
 /* Size of the allocated buffer for DCF packages in the Flash. */
 __SIZEOF_DCF_PKG = LENGTH(DCF_PKG);
-<<<<<<< HEAD
->>>>>>> f894600 (Add Memory manager to DM. (#24))
-=======
 
 /* Custom variables to be accessed from user C code */
 __REGISTRY = ORIGIN(REGISTRY);
 __REGISTRYINFO = ORIGIN(REGISTRYINFO);
 __SIZEOF_REGISTRY = LENGTH(REGISTRY);
 __SIZEOF_REGISTRYINFO = LENGTH(REGISTRYINFO);
->>>>>>> 2aadf94142c2561b5ab0f45e65c1206a8651604d
 
 /* Define output sections */
 SECTIONS

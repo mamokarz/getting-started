@@ -204,98 +204,10 @@ static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void*
           if ((hal_status = internal_flash_write((uint8_t*)address, local_buffer, returned_size))
               != HAL_OK)
           {
-<<<<<<< HEAD
-<<<<<<< HEAD
-            // grab first chunk
-            nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
-            if ((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
-            {
-              // save pointer to first chunk
-              az_span data = az_span_create(packet_ptr->nx_packet_prepend_ptr, packet_ptr->nx_packet_length);
-
-              // calculate destination pointer
-              uint8_t* dest_ptr = (uint8_t*)(address);
-
-              // grab package size and round up to nearest 2KB (0x0800)
-              uint32_t package_size = (uint32_t)http_client.nx_web_http_client_total_receive_bytes;
-              if ((package_size & 0x07FF) != 0x000)
-              {
-                package_size = (package_size & 0xFFFFF800) + 0x0800;
-              }
-
-              // erase flash
-              if ((hal_status = internal_flash_erase((UCHAR*)address, package_size)) == HAL_OK)
-              {
-                // write first chunk to flash
-                if ((hal_status = internal_flash_write(dest_ptr, az_span_ptr(data), az_span_size(data))) == HAL_OK)
-                {
-                  // if there are more chunks to store, loop over them until done
-                  while (nx_status == NX_SUCCESS)
-                  {
-                    // release packet_ptr from last nx_web_htt_client_response_body_get()
-                    nx_status = nx_packet_release(packet_ptr);
-
-                    // grab next chunk
-                    nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
-                    if ((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
-                    {
-                      // increase destination pointer by size of last chunk
-                      dest_ptr += az_span_size(data);
-
-                      // save pointer to chunk
-                      data = az_span_create(packet_ptr->nx_packet_prepend_ptr, packet_ptr->nx_packet_length);
-
-                      // call store to flash
-                      if ((hal_status = internal_flash_write(dest_ptr, az_span_ptr(data), az_span_size(data))) !=
-                          HAL_OK)
-                      {
-                        break;
-                      }
-                    }
-                  }
-                }
-              }
-
-              if (nx_status == NX_WEB_HTTP_GET_DONE)
-              {
-                nx_status = NX_SUCCESS;
-              }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
-              nx_status = nx_packet_release(packet_ptr);
-<<<<<<< HEAD
->>>>>>> 081021f (address comments, clean up code)
-            }        
-=======
-            } 
-
-            if(nx_status == NX_WEB_HTTP_GET_DONE)
-            {
-              nx_status = NX_SUCCESS;
-            }            
-          }
->>>>>>> bc2bf24 (Address PR comments.)
-=======
-            }
-<<<<<<< HEAD
-          }        
->>>>>>> 5a23efd (fix nx_packet_release() decision tree, add indentwidth to clang-format)
-=======
-          }
->>>>>>> 6ae3692 (MSFT format with clang-format)
-=======
-=======
->>>>>>> 2aadf94142c2561b5ab0f45e65c1206a8651604d
             result = result_from_hal_status(hal_status);
           }
           // increment the write address by the last write-size
           address += returned_size;
-<<<<<<< HEAD
->>>>>>> 40fb47e (Perform dm install from blob using blob-specific ustream implementation (#15))
-=======
->>>>>>> 2aadf94142c2561b5ab0f45e65c1206a8651604d
         }
       } while (result == AZ_OK);
     }

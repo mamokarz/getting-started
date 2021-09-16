@@ -27,9 +27,6 @@ For guidance on connecting additional devices, see the [Embedded device quicksta
 * Wi-Fi 2.4 GHz
 * USB 2.0 A male to Micro USB male cable
 
-<<<<<<< HEAD
-## Steps
-=======
 * A PC running Microsoft Windows 10
 * [Git](https://git-scm.com/downloads) for cloning the repository
 * Hardware
@@ -71,7 +68,6 @@ To install the tools:
 
 1. After the installation, open a new console window to recognize the configuration changes made by the setup script. Use this console to complete the remaining programming tasks in the tutorial. You can use Windows CMD, PowerShell, or Git Bash for Windows.
 1. Run the following code to confirm that CMake version 3.14 or later is installed.
->>>>>>> cd33531 (Fix repo address in the readme.md)
 
 1. Recursively clone the repository:
     ```shell
