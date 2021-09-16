@@ -8,9 +8,9 @@ cmake_minimum_required(VERSION 3.10)
 project(key_vault.1 C ASM)
 
 add_executable(key_vault.1
-  startup/gnu/txm_module_preamble.s
+  startup/gnu/txm_module_preamble.S
   startup/gnu/gcc_setup.s
-  startup/gnu/tx_initialize_low_level.s
+  startup/gnu/tx_initialize_low_level.S
   startup/gnu/precondition_fail.c
   ${CMAKE_CURRENT_LIST_DIR}/key_vault_interface.c
   ${CMAKE_CURRENT_LIST_DIR}/key_vault.c
