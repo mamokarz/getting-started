@@ -3,29 +3,23 @@
 // See LICENSE file in the project root for full license information.
 
 #include "_az_ulib_dm_blob.h"
+#include "az_ulib_dm_blob_ustream_interface.h"
 #include "az_ulib_result.h"
+#include "az_ulib_ustream.h"
 #include "azure/az_core.h"
-#include "nx_api.h"
-#include "nx_web_http_client.h"
-#include "nx_wifi.h"
-#include "nxd_dns.h"
 #include "stm32l475_flash_driver.h"
-#include "stm_networking.h"
-#include "wifi.h"
-
 #include <stdbool.h>
 #include <stdint.h>
 
-#define USER_AGENT_NAME  "User-Agent: "
-#define USER_AGENT_VALUE "Azure RTOS Device (STM32)"
-#define DCF_WAIT_TIME    600
+// TODO: Move to gateway
+#include "stm_networking.h"
 
 static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* slice)
 {
-  int32_t size = az_span_size(span);
+  int32_t returned_size = az_span_size(span);
   uint8_t* buf = az_span_ptr(span);
-  int32_t end  = start;
-  while (end < size)
+  int32_t end = start;
+  while (end < returned_size)
   {
     if (buf[end] == c)
     {
@@ -40,7 +34,8 @@ static int32_t slice_next_char(az_span span, int32_t start, uint8_t c, az_span* 
   return -1;
 }
 
-static az_result split_url(az_span url,
+static az_result split_url(
+    az_span url,
     az_span* protocol,
     az_span* address,
     az_span* resource,
@@ -54,14 +49,16 @@ static az_result split_url(az_span url,
     int32_t next;
 
     /* Get protocol http:// or https:// */
-    AZ_ULIB_THROW_IF_ERROR(((next = az_span_find(url, AZ_SPAN_FROM_STR("://"))) != -1), AZ_ERROR_UNEXPECTED_CHAR);
+    AZ_ULIB_THROW_IF_ERROR(
+        ((next = az_span_find(url, AZ_SPAN_FROM_STR("://"))) != -1), AZ_ERROR_UNEXPECTED_CHAR);
     if (protocol != NULL)
     {
       *protocol = az_span_slice(url, 0, next);
     }
 
     /* Get address. */
-    AZ_ULIB_THROW_IF_ERROR(((next = slice_next_char(url, next + 3, '/', address)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
+    AZ_ULIB_THROW_IF_ERROR(
+        ((next = slice_next_char(url, next + 3, '/', address)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
     /* Get resource span. */
     if (resource != NULL)
@@ -70,13 +67,15 @@ static az_result split_url(az_span url,
     }
 
     /* Get container name. */
-    AZ_ULIB_THROW_IF_ERROR(((next = slice_next_char(url, next + 1, '/', container)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
+    AZ_ULIB_THROW_IF_ERROR(
+        ((next = slice_next_char(url, next + 1, '/', container)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
     // Get directories, if exist. */
     // TODO: add code to read directories here.
 
     // Get file_name. */
-    AZ_ULIB_THROW_IF_ERROR(((next = slice_next_char(url, next + 1, '?', file_name)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
+    AZ_ULIB_THROW_IF_ERROR(
+        ((next = slice_next_char(url, next + 1, '?', file_name)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
     // Get sas_token. */
     if (sas_token != NULL)
@@ -84,14 +83,12 @@ static az_result split_url(az_span url,
       *sas_token = az_span_slice_to_end(url, next + 1);
     }
   }
-  AZ_ULIB_CATCH(...)
-  {
-    return AZ_ULIB_TRY_RESULT;
-  }
+  AZ_ULIB_CATCH(...) { return AZ_ULIB_TRY_RESULT; }
 
   return AZ_OK;
 }
 
+// TODO: Move to gateway
 static az_result get_ip_from_uri(az_span uri, NXD_ADDRESS* ip)
 {
   AZ_ULIB_TRY
@@ -99,12 +96,11 @@ static az_result get_ip_from_uri(az_span uri, NXD_ADDRESS* ip)
     /* Get the IPv4 for the URI using DNS. */
     char uri_str[50];
     az_span_to_str(uri_str, sizeof(uri_str), uri);
-    UINT status = nxd_dns_host_by_name_get(&nx_dns_client, (UCHAR*)uri_str, ip, NX_IP_PERIODIC_RATE, NX_IP_VERSION_V4);
+    UINT status = nxd_dns_host_by_name_get(
+        &nx_dns_client, (UCHAR*)uri_str, ip, NX_IP_PERIODIC_RATE, NX_IP_VERSION_V4);
     AZ_ULIB_THROW_IF_ERROR((status == NX_SUCCESS), AZ_ERROR_ULIB_SYSTEM);
   }
-  AZ_ULIB_CATCH(...)
-  {
-  }
+  AZ_ULIB_CATCH(...) {}
 
   return AZ_ULIB_TRY_RESULT;
 }
@@ -116,46 +112,16 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_get_package_name(az_span url, az_span* n
     AZ_ULIB_THROW_IF_AZ_ERROR(split_url(url, NULL, NULL, NULL, NULL, NULL, name, NULL));
     AZ_ULIB_THROW_IF_ERROR((slice_next_char(*name, 0, '.', name) != -1), AZ_ERROR_UNEXPECTED_CHAR);
   }
-  AZ_ULIB_CATCH(...)
-  {
-  }
+  AZ_ULIB_CATCH(...) {}
 
   return AZ_ULIB_TRY_RESULT;
 }
 
-AZ_NODISCARD az_result _az_ulib_dm_blob_get_size(az_span url, int32_t* size)
+AZ_NODISCARD az_result _az_ulib_dm_blob_get_size(az_span url, int32_t* returned_size)
 {
   (void)url;
-  (void)size;
+  (void)returned_size;
   return AZ_ERROR_NOT_IMPLEMENTED;
-}
-
-static az_result result_from_nx_status(UINT nx_status)
-{
-  switch (nx_status)
-  {
-    case NX_SUCCESS:
-      return AZ_OK;
-    case NX_WEB_HTTP_POOL_ERROR:
-      return AZ_ERROR_NOT_ENOUGH_SPACE;
-    case NX_NO_PACKET:
-      return AZ_ERROR_NOT_ENOUGH_SPACE;
-    case NX_INVALID_PARAMETERS:
-      return AZ_ERROR_NOT_SUPPORTED;
-    case NX_OPTION_ERROR:
-      return AZ_ERROR_ARG;
-    case NX_PTR_ERROR:
-      return AZ_ERROR_ARG;
-    case NX_CALLER_ERROR:
-      return AZ_ERROR_ARG;
-    case NX_WEB_HTTP_NOT_READY:
-      return AZ_ERROR_ULIB_BUSY;
-    case NX_WAIT_ABORTED:
-      return AZ_ERROR_ULIB_SYSTEM; // should be AZ_ERROR_ULIB_TIME_OUT
-                                   // or AZ_ERROR_ULIB_ABORTED
-    default:
-      return AZ_ERROR_ULIB_SYSTEM;
-  }
 }
 
 static az_result result_from_hal_status(HAL_StatusTypeDef status)
@@ -175,44 +141,37 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status)
   }
 }
 
-static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host, void* address)
+static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void* address)
 {
-  (void)address;
-
-  NX_WEB_HTTP_CLIENT http_client;
-  NX_PACKET* packet_ptr = NULL;
-  UINT nx_status;
+  az_result result;
   HAL_StatusTypeDef hal_status;
 
-  // create http blob client
-  if ((nx_status = nx_web_http_client_create(&http_client, "HTTP Client", &nx_ip, &nx_pool, 1536)) == NX_SUCCESS)
+  size_t returned_size = 0;
+  static uint8_t local_buffer[256] = { 0 };
+
+  if ((result = az_ulib_ustream_get_remaining_size(ustream_instance, &returned_size)) == AZ_OK)
   {
-    // connect to server
-    if ((nx_status = nx_web_http_client_connect(&http_client, ip, NX_WEB_HTTP_SERVER_PORT, DCF_WAIT_TIME)) ==
-        NX_SUCCESS)
+    // erase flash
+    if ((hal_status = internal_flash_erase((UCHAR*)address, returned_size)) != HAL_OK)
     {
-      // initialize get request
-      if ((nx_status = nx_web_http_client_request_initialize(&http_client,
-               NX_WEB_HTTP_METHOD_GET, /* GET, PUT, DELETE, POST, HEAD */
-               resource,               /* "resource" (usually includes auth headers)*/
-               host,                   /* "host" */
-               0,                      /* Used by PUT and POST */
-               NX_FALSE,               /* If true, input_size is ignored. */
-               NX_NULL,                /* "name" */
-               NX_NULL,                /* "password" */
-               DCF_WAIT_TIME)) == NX_SUCCESS)
+      result = result_from_hal_status(hal_status);
+    }
+
+    // start ustream data transfer from blob client
+    else
+    {
+      do
       {
-        // add user agent
-        if ((nx_status = nx_web_http_client_request_header_add(&http_client,
-                 USER_AGENT_NAME,
-                 sizeof(USER_AGENT_NAME) - 1,
-                 USER_AGENT_VALUE,
-                 sizeof(USER_AGENT_VALUE) - 1,
-                 DCF_WAIT_TIME)) == NX_SUCCESS)
+        // grab next buffer-full from ustream_instance
+        if ((result = az_ulib_ustream_read(
+                 ustream_instance, local_buffer, sizeof(local_buffer), &returned_size))
+            == AZ_OK) // should not use EOF
         {
-          // send request
-          if ((nx_status = nx_web_http_client_request_send(&http_client, DCF_WAIT_TIME)) == NX_SUCCESS)
+          // write to flash if we have not reached the end of this chunk of data
+          if ((hal_status = internal_flash_write((uint8_t*)address, local_buffer, returned_size))
+              != HAL_OK)
           {
+<<<<<<< HEAD
             // grab first chunk
             nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
             if ((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
@@ -292,22 +251,56 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
 =======
           }
 >>>>>>> 6ae3692 (MSFT format with clang-format)
+=======
+            result = result_from_hal_status(hal_status);
+          }
+          // increment the write address by the last write-size
+          address += returned_size;
+>>>>>>> 40fb47e (Perform dm install from blob using blob-specific ustream implementation (#15))
         }
-      }
+      } while (result == AZ_OK);
     }
 
-    nx_status = nx_web_http_client_delete(&http_client);
+    if (result == AZ_ULIB_EOF)
+    {
+      result = AZ_OK;
+    }
   }
 
-  if (nx_status != NX_SUCCESS)
+  return result;
+}
+
+static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host, void* address)
+{
+
+  AZ_ULIB_TRY
   {
-    return result_from_nx_status(nx_status);
+    (void)address;
+    az_ulib_ustream ustream_instance;
+
+    static az_blob_http_cb blob_http_cb;
+    az_ulib_ustream_data_cb ustream_data_cb;
+
+    // create ustream_instance and blob client
+    AZ_ULIB_THROW_IF_AZ_ERROR(az_blob_create_ustream_from_blob(
+        &ustream_instance,
+        &ustream_data_cb,
+        NULL,
+        &blob_http_cb,
+        NULL,
+        ip,
+        (int8_t*)resource,
+        (int8_t*)host));
+
+    // use ustream_instance to write blob package to flash
+    AZ_ULIB_THROW_IF_AZ_ERROR(write_ustream_to_flash(&ustream_instance, address));
+
+    // free up connection and ustream_instance resources
+    AZ_ULIB_THROW_IF_AZ_ERROR(az_ulib_ustream_dispose(&ustream_instance));
   }
-  if (hal_status != HAL_OK)
-  {
-    return result_from_hal_status(hal_status);
-  }
-  return AZ_OK;
+  AZ_ULIB_CATCH(...) {}
+
+  return AZ_ULIB_TRY_RESULT;
 }
 
 AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
@@ -328,9 +321,7 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_download(void* address, az_span url)
     az_span_to_str(resource_str, sizeof(resource_str), resource);
     AZ_ULIB_THROW_IF_AZ_ERROR(copy_blob_to_flash(&ip, resource_str, host, address));
   }
-  AZ_ULIB_CATCH(...)
-  {
-  }
+  AZ_ULIB_CATCH(...) {}
 
   return AZ_ULIB_TRY_RESULT;
 }
