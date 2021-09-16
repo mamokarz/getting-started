@@ -27,7 +27,51 @@ For guidance on connecting additional devices, see the [Embedded device quicksta
 * Wi-Fi 2.4 GHz
 * USB 2.0 A male to Micro USB male cable
 
+<<<<<<< HEAD
 ## Steps
+=======
+* A PC running Microsoft Windows 10
+* [Git](https://git-scm.com/downloads) for cloning the repository
+* Hardware
+
+    > The * STM DevKit. The tutorial works with either of the following STM Discovery kits.
+    >   * [B-L475E-IOT01A](https://www.st.com/en/evaluation-tools/b-l475e-iot01a.html)
+    >   * [B-L4S5I-IOT01A](https://www.st.com/en/evaluation-tools/b-l4s5i-iot01a.html)
+    > * Wi-Fi 2.4 GHz
+    > * USB 2.0 A male to Micro USB male cable
+
+## Prepare the development environment
+
+To set up your development environment, first you clone a GitHub repo that contains all the assets you need for the tutorial. Then you install a set of programming tools.
+
+### Clone the repo for the tutorial
+
+Clone the following repo to download all sample device code, setup scripts, and offline versions of the documentation. If you previously cloned this repo in another tutorial, you don't need to do it again.
+
+To clone the repo, run the following command:
+
+```shell
+git clone --recursive https://github.com/mamokarz/getting-started.git
+```
+
+### Install the tools
+
+The cloned repo contains a setup script that installs and configures the required tools. If you installed these tools in another tutorial in the getting started guide, you don't need to do it again.
+
+> Note: The setup script installs the following tools:
+> * [CMake](https://cmake.org): Build
+> * [ARM GCC](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm): Compile
+> * [Termite](https://www.compuphase.com/software_termite.htm): Monitor serial port output for connected devices
+
+To install the tools:
+
+1. From File Explorer, navigate to the following path in the repo and run the setup script named *get-toolchain.bat*:
+
+    > *getting-started\tools\get-toolchain.bat*
+
+1. After the installation, open a new console window to recognize the configuration changes made by the setup script. Use this console to complete the remaining programming tasks in the tutorial. You can use Windows CMD, PowerShell, or Git Bash for Windows.
+1. Run the following code to confirm that CMake version 3.14 or later is installed.
+>>>>>>> cd33531 (Fix repo address in the readme.md)
 
 1. Recursively clone the repository:
     ```shell
