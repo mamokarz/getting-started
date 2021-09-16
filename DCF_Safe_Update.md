@@ -29,9 +29,9 @@ az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "ip
 }
 ```
 
-If you don't have it, you can install it from your blob storage. For example, in the address 134545408 [0x08050000].
+If you don't have it, you can install it from your blob storage.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\`"source_type\`":1,\`"address\`":134545408,\`"package_name\`":\`"https://mystorage.blob.core.windows.net/packages/key_vault.1.bin?sp=r&st=2021-08-12T17:02:13Z&se=2021-09-01T01:02:13Z&sv=2020-08-04&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\`"}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\`"source_type\`":1,\`"package_name\`":\`"https://mystorage.blob.core.windows.net/packages/key_vault.1.bin?sp=r&st=2021-08-12T17:02:13Z&se=2021-09-01T01:02:13Z&sv=2020-08-04&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\`"}"
 
 // expected outcome
 {
@@ -79,9 +79,9 @@ As we explained in the [DCF Tutorial](DCF_Demo.md), the `*` means the "DEFAULT" 
 
 But who is the default package? When a new package is installed, if no other package already exposed the interface that this new package will publish, the installed package will be the default one for this interface. You can check that in the "ipc.*.query.1:query", all default packages contains a `*` in front of its name.
 
-To better understand this, let's install a second version of the key_vault that implements both old and new algorithms. We shall chose a different memory position to not overlap with the current key_vault.1. Let's use, for example, the address 134578176 [0x08058000].
+To better understand this, let's install a second version of the key_vault that implements both old and new algorithms.
 ```
-az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\`"source_type\`":1,\`"address\`":134578176,\`"package_name\`":\`"https://mokastorage.blob.core.windows.net/packages/key_vault.2.bin?sp=r&st=2021-08-12T17:02:35Z&se=2021-09-01T01:02:35Z&sv=2020-08-04&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\`"}"
+az iot hub invoke-device-method -n [name-of-iothub] -d [name-of-device] --mn "dm.*.packages.1:install" --mp "{\`"source_type\`":1,\`"package_name\`":\`"https://mokastorage.blob.core.windows.net/packages/key_vault.2.bin?sp=r&st=2021-08-12T17:02:35Z&se=2021-09-01T01:02:35Z&sv=2020-08-04&sr=b&sig=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\`"}"
 
 // expected outcome
 {

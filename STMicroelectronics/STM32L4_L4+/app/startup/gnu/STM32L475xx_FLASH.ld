@@ -45,8 +45,9 @@ __RAM_segment_used_end__ = 0;
 /* Specify the memory areas */
 MEMORY
 {
-RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 96K
+RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 96K
 RAM2 (xrw)      : ORIGIN = 0x10000000, LENGTH = 32K
+<<<<<<< HEAD
 FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 1018K
 REGISTRYINFO (rx)      : ORIGIN = 0x80FE800, LENGTH = 2K
 REGISTRY (rx)      : ORIGIN = 0x80FF000, LENGTH = 4K
@@ -57,6 +58,17 @@ __REGISTRY = ORIGIN(REGISTRY);
 __REGISTRYINFO = ORIGIN(REGISTRYINFO);
 __SIZEOF_REGISTRY = LENGTH(REGISTRY);
 __SIZEOF_REGISTRYINFO = LENGTH(REGISTRYINFO);
+=======
+FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 0x00050000
+DCF_PKG (rx)    : ORIGIN = 0x08050000, LENGTH = 0x000B0000
+}
+
+/* Starting point of the DCF packages in the Flash. */
+__DCF_PKG = ORIGIN(DCF_PKG);
+
+/* Size of the allocated buffer for DCF packages in the Flash. */
+__SIZEOF_DCF_PKG = LENGTH(DCF_PKG);
+>>>>>>> f894600 (Add Memory manager to DM. (#24))
 
 /* Define output sections */
 SECTIONS
@@ -136,6 +148,15 @@ SECTIONS
     PROVIDE_HIDDEN (__fini_array_end = .);
 	. = ALIGN(8);
   } >FLASH
+
+  /* Device Manager can store packages to run. */
+  .dcf_pkg :
+  {
+    __dcf_pgk_start = ALIGN(8);
+    *(.dcf)         /* .dcf_pkg sections to store DCF packges. */
+    *(.dcf*)        /* .dcf_pkg* sections to store DCF packges. */
+    . = ALIGN(8);
+  } >DCF_PKG
 
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
