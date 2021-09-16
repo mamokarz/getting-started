@@ -18,6 +18,9 @@ extern "C"
 #else
 #endif
 
+#define DM_1_PACKAGE_NAME "dm"
+#define DM_1_PACKAGE_VERSION 1
+
   /*
    * Publish Device Manager interface.
    */
