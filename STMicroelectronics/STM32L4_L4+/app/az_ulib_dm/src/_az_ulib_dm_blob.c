@@ -205,6 +205,7 @@ static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void*
               != HAL_OK)
           {
 <<<<<<< HEAD
+<<<<<<< HEAD
             // grab first chunk
             nx_status = nx_web_http_client_response_body_get(&http_client, &packet_ptr, 500);
             if ((nx_status == NX_SUCCESS) || (nx_status == NX_WEB_HTTP_GET_DONE))
@@ -285,11 +286,16 @@ static az_result write_ustream_to_flash(az_ulib_ustream* ustream_instance, void*
           }
 >>>>>>> 6ae3692 (MSFT format with clang-format)
 =======
+=======
+>>>>>>> 2aadf94142c2561b5ab0f45e65c1206a8651604d
             result = result_from_hal_status(hal_status);
           }
           // increment the write address by the last write-size
           address += returned_size;
+<<<<<<< HEAD
 >>>>>>> 40fb47e (Perform dm install from blob using blob-specific ustream implementation (#15))
+=======
+>>>>>>> 2aadf94142c2561b5ab0f45e65c1206a8651604d
         }
       } while (result == AZ_OK);
     }

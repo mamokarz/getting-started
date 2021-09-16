@@ -310,6 +310,7 @@ UINT azure_iot_nx_client_entry(
 
 #ifdef ENABLE_DPS
 <<<<<<< HEAD
+<<<<<<< HEAD
     status = azure_iot_nx_client_dps_create(&azure_iot_nx_client, IOT_DPS_ID_SCOPE, IOT_DPS_REGISTRATION_ID);
 #else
     status = azure_iot_nx_client_hub_create(&azure_iot_nx_client, IOT_HUB_HOSTNAME, IOT_HUB_DEVICE_ID);
@@ -318,6 +319,11 @@ UINT azure_iot_nx_client_entry(
 #else
   azure_iot_nx_client_hub_create(&azure_iot_nx_client, IOT_HUB_HOSTNAME, IOT_HUB_DEVICE_ID);
 >>>>>>> d207dcc (Add the management interface to the IPC with the capability of change the default interface. (#17))
+=======
+  azure_iot_nx_client_dps_create(&azure_iot_nx_client, IOT_DPS_ID_SCOPE, IOT_DPS_REGISTRATION_ID);
+#else
+  azure_iot_nx_client_hub_create(&azure_iot_nx_client, IOT_HUB_HOSTNAME, IOT_HUB_DEVICE_ID);
+>>>>>>> 2aadf94142c2561b5ab0f45e65c1206a8651604d
 #endif
   if (status != NX_SUCCESS)
   {
