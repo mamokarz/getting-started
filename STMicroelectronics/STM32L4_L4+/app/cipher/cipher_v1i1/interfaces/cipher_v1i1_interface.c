@@ -27,7 +27,7 @@ static az_result cipher_1_encrypt_concrete(az_ulib_model_in model_in, az_ulib_mo
 {
   const cipher_1_encrypt_model_in* const in = (const cipher_1_encrypt_model_in* const)model_in;
   cipher_1_encrypt_model_out* out = (cipher_1_encrypt_model_out*)model_out;
-  return cipher_v1i1_encrypt(in->context, in->src, out->dest);
+  return cipher_v1i1_encrypt(in->algorithm, in->src, out->dest);
 }
 
 static az_result cipher_1_encrypt_span_wrapper(az_span model_in_span, az_span* model_out_span)
@@ -41,10 +41,10 @@ static az_result cipher_1_encrypt_span_wrapper(az_span model_in_span, az_span* m
     AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
     while (jr.token.kind != AZ_JSON_TOKEN_END_OBJECT)
     {
-      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(CIPHER_1_ENCRYPT_CONTEXT_NAME)))
+      if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(CIPHER_1_ENCRYPT_ALGORITHM_NAME)))
       {
         AZ_ULIB_THROW_IF_AZ_ERROR(az_json_reader_next_token(&jr));
-        AZ_ULIB_THROW_IF_AZ_ERROR(az_json_token_get_uint32(&jr.token, &encrypt_model_in.context));
+        AZ_ULIB_THROW_IF_AZ_ERROR(az_json_token_get_uint32(&jr.token, &encrypt_model_in.algorithm));
       }
       else if (az_json_token_is_text_equal(&jr.token, AZ_SPAN_FROM_STR(CIPHER_1_ENCRYPT_SRC_NAME)))
       {

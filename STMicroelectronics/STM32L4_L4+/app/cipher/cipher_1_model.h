@@ -34,12 +34,12 @@ extern "C"
  */
 #define CIPHER_1_ENCRYPT_COMMAND (az_ulib_capability_index)0
 #define CIPHER_1_ENCRYPT_COMMAND_NAME "encrypt"
-#define CIPHER_1_ENCRYPT_CONTEXT_NAME "context"
+#define CIPHER_1_ENCRYPT_ALGORITHM_NAME "algorithm"
 #define CIPHER_1_ENCRYPT_SRC_NAME "src"
 #define CIPHER_1_ENCRYPT_DEST_NAME "dest"
   typedef struct
   {
-    uint32_t context;
+    uint32_t algorithm;
     az_span src;
   } cipher_1_encrypt_model_in;
   typedef struct
