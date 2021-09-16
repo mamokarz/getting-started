@@ -55,14 +55,16 @@ static az_result split_url(
     int32_t next;
 
     /* Get protocol http:// or https:// */
-    AZ_ULIB_THROW_IF_ERROR(((next = az_span_find(url, AZ_SPAN_FROM_STR("://"))) != -1), AZ_ERROR_UNEXPECTED_CHAR);
+    AZ_ULIB_THROW_IF_ERROR(
+        ((next = az_span_find(url, AZ_SPAN_FROM_STR("://"))) != -1), AZ_ERROR_UNEXPECTED_CHAR);
     if(protocol != NULL)
     {
       *protocol = az_span_slice(url, 0, next);
     }
 
     /* Get address. */
-    AZ_ULIB_THROW_IF_ERROR(((next = slice_next_char(url, next + 3, '/', address)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
+    AZ_ULIB_THROW_IF_ERROR(
+        ((next = slice_next_char(url, next + 3, '/', address)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
     /* Get resource span. */
     if(resource != NULL)
@@ -71,13 +73,15 @@ static az_result split_url(
     }
 
     /* Get container name. */
-    AZ_ULIB_THROW_IF_ERROR(((next = slice_next_char(url, next + 1, '/', container)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
+    AZ_ULIB_THROW_IF_ERROR(
+        ((next = slice_next_char(url, next + 1, '/', container)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
     // Get directories, if exist. */
     // TODO: add code to read directories here.
 
     // Get file_name. */
-    AZ_ULIB_THROW_IF_ERROR(((next = slice_next_char(url, next + 1, '?', file_name)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
+    AZ_ULIB_THROW_IF_ERROR(
+        ((next = slice_next_char(url, next + 1, '?', file_name)) != -1), AZ_ERROR_UNEXPECTED_CHAR);
 
     // Get sas_token. */
     if(sas_token != NULL) 
@@ -117,7 +121,8 @@ AZ_NODISCARD az_result _az_ulib_dm_blob_get_package_name(az_span url, az_span* n
   AZ_ULIB_TRY
   {
     AZ_ULIB_THROW_IF_AZ_ERROR(split_url(url, NULL, NULL, NULL, NULL, NULL, name, NULL));
-    AZ_ULIB_THROW_IF_ERROR((slice_next_char(*name, 0, '.', name) != -1), AZ_ERROR_UNEXPECTED_CHAR);
+    AZ_ULIB_THROW_IF_ERROR(
+        (slice_next_char(*name, 0, '.', name) != -1), AZ_ERROR_UNEXPECTED_CHAR);
   } AZ_ULIB_CATCH(...) {}
 
   return AZ_ULIB_TRY_RESULT;
@@ -142,7 +147,8 @@ static az_result result_from_nx_status(UINT nx_status)
     case NX_PTR_ERROR:            return AZ_ERROR_ARG;
     case NX_CALLER_ERROR:         return AZ_ERROR_ARG;
     case NX_WEB_HTTP_NOT_READY:   return AZ_ERROR_ULIB_BUSY;
-    case NX_WAIT_ABORTED:         return AZ_ERROR_ULIB_SYSTEM; //should be AZ_ERROR_ULIB_TIME_OUT or AZ_ERROR_ULIB_ABORTED
+    case NX_WAIT_ABORTED:         return AZ_ERROR_ULIB_SYSTEM;  //should be AZ_ERROR_ULIB_TIME_OUT
+                                                                // or AZ_ERROR_ULIB_ABORTED
     default:                      return AZ_ERROR_ULIB_SYSTEM; 
   }
 }
@@ -154,7 +160,7 @@ static az_result result_from_hal_status(HAL_StatusTypeDef status)
     case HAL_OK:                  return AZ_OK;
     case HAL_ERROR:               return AZ_ERROR_ULIB_SYSTEM;
     case HAL_BUSY:                return AZ_ERROR_ULIB_BUSY;
-    case HAL_TIMEOUT:             return AZ_ERROR_ULIB_SYSTEM; //should be AZ_ERROR_ULIB_TIME_OUT
+    case HAL_TIMEOUT:             return AZ_ERROR_ULIB_SYSTEM;  //should be AZ_ERROR_ULIB_TIME_OUT
     default:                      return AZ_ERROR_ULIB_SYSTEM; 
   }
 }
@@ -268,7 +274,17 @@ static az_result copy_blob_to_flash(NXD_ADDRESS* ip, CHAR* resource, CHAR* host,
                   nx_status = NX_SUCCESS;
                 }            
               }
+<<<<<<< HEAD
             }        
+=======
+            } 
+
+            if(nx_status == NX_WEB_HTTP_GET_DONE)
+            {
+              nx_status = NX_SUCCESS;
+            }            
+          }
+>>>>>>> bc2bf24 (Address PR comments.)
         }
       }
         
