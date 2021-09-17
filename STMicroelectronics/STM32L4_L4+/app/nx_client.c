@@ -23,7 +23,7 @@
 #include "azure_device_x509_cert_config.h"
 #include "azure_pnp_info.h"
 
-#define IOT_MODEL_ID "dtmi:azurertos:devkit:gsg;1"
+#define IOT_MODEL_ID "dtmi:azurertos:devkit:gsg;2"
 
 #define TELEMETRY_TEMPERATURE "temperature"
 #define TELEMETRY_INTERVAL_PROPERTY "telemetryInterval"
@@ -309,9 +309,9 @@ UINT azure_iot_nx_client_entry(
   }
 
 #ifdef ENABLE_DPS
-  azure_iot_nx_client_dps_create(&azure_iot_nx_client, IOT_DPS_ID_SCOPE, IOT_DPS_REGISTRATION_ID);
+    status = azure_iot_nx_client_dps_create(&azure_iot_nx_client, IOT_DPS_ID_SCOPE, IOT_DPS_REGISTRATION_ID);
 #else
-  azure_iot_nx_client_hub_create(&azure_iot_nx_client, IOT_HUB_HOSTNAME, IOT_HUB_DEVICE_ID);
+    status = azure_iot_nx_client_hub_create(&azure_iot_nx_client, IOT_HUB_HOSTNAME, IOT_HUB_DEVICE_ID);
 #endif
   if (status != NX_SUCCESS)
   {

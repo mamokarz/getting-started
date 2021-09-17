@@ -31,6 +31,10 @@
 #define MAX_EXPONENTIAL_BACKOFF_IN_SEC         (10 * 60)
 #define INITIAL_EXPONENTIAL_BACKOFF_IN_SEC     3
 
+// Connection timeouts in threadx ticks
+#define HUB_CONNECT_TIMEOUT_TICKS  (10 * TX_TIMER_TICKS_PER_SECOND)
+#define DPS_REGISTER_TIMEOUT_TICKS (3 * TX_TIMER_TICKS_PER_SECOND)
+
 static UINT exponential_backoff_with_jitter(UINT* exponential_retry_count)
 {
     float jitter_percent = (MAX_EXPONENTIAL_BACKOFF_JITTER_PERCENT / 100.0f) * (rand() / ((float)RAND_MAX));
@@ -58,15 +62,15 @@ static VOID connection_status_callback(NX_AZURE_IOT_HUB_CLIENT* hub_client_ptr, 
     }
     else
     {
-        printf("Disconnected from IoT Hub (0x%08x)\r\n", status);
+        printf("Connection failure from IoT Hub (0x%08x)\r\n", status);
 
         UINT connect_status = NX_AZURE_IOT_FAILURE;
         UINT retry_count    = 0;
         while (connect_status)
         {
-            printf("Reconnecting to IoT Hub ...\r\n");
+            printf("Reconnecting to IoT Hub...\r\n");
 
-            if ((connect_status = nx_azure_iot_hub_client_connect(hub_client_ptr, NX_TRUE, NX_WAIT_FOREVER)))
+            if ((connect_status = nx_azure_iot_hub_client_connect(hub_client_ptr, NX_TRUE, HUB_CONNECT_TIMEOUT_TICKS)))
             {
                 printf("Failed reconnect on nx_azure_iot_hub_client_connect (0x%08x)\r\n", connect_status);
                 tx_thread_sleep(exponential_backoff_with_jitter(&retry_count));
@@ -278,6 +282,7 @@ static UINT azure_iot_nx_client_hub_create_internal(AZURE_IOT_NX_CONTEXT* contex
     printf("Initializing Azure IoT Hub client\r\n");
     printf("\tHub hostname: %s\r\n", context->azure_iot_hub_hostname);
     printf("\tDevice id: %s\r\n", context->azure_iot_device_id);
+    printf("\tModel id: %s\r\n", context->azure_iot_model_id);
 
     // Initialize IoT Hub client.
     if ((status = nx_azure_iot_hub_client_initialize(&context->iothub_client,
@@ -613,7 +618,7 @@ UINT azure_iot_nx_client_dps_create(AZURE_IOT_NX_CONTEXT* context, CHAR* dps_id_
         if ((status = nx_azure_iot_provisioning_client_device_cert_set(
                  &context->dps_client, &context->device_certificate)))
         {
-            printf("Failed on nx_azure_iot_hub_client_device_cert_set!: error code = 0x%08x\r\n", status);
+            printf("Failed on nx_azure_iot_hub_client_device_cert_set! (0x%08x)\r\n", status);
         }
     }
 
@@ -621,13 +626,29 @@ UINT azure_iot_nx_client_dps_create(AZURE_IOT_NX_CONTEXT* context, CHAR* dps_id_
     if ((status = nx_azure_iot_provisioning_client_registration_payload_set(
              &context->dps_client, (UCHAR*)payload, strlen(payload))))
     {
-        printf("Error: nx_azure_iot_provisioning_client_registration_payload_set (0x%08x\r\n", status);
+        printf("ERROR: nx_azure_iot_provisioning_client_registration_payload_set (0x%08x\r\n", status);
     }
 
     // Register device
-    else if ((status = nx_azure_iot_provisioning_client_register(&context->dps_client, NX_WAIT_FOREVER)))
+    else
     {
-        printf("ERROR: nx_azure_iot_provisioning_client_register (0x%08x)\r\n", status);
+        while (true)
+        {
+            status = nx_azure_iot_provisioning_client_register(&context->dps_client, DPS_REGISTER_TIMEOUT_TICKS);
+            if (status == NX_AZURE_IOT_PENDING)
+            {
+                printf("\tPending DPS connection, retrying\r\n");
+                continue;
+            }
+
+            // Registration complete
+            break;
+        }
+    }
+
+    if (status != NX_AZURE_IOT_SUCCESS)
+    {
+        printf("\tERROR: nx_azure_iot_provisioning_client_register (0x%08x)\r\n", status);
     }
 
     // Get Device info
@@ -674,7 +695,7 @@ UINT azure_iot_nx_client_connect(AZURE_IOT_NX_CONTEXT* context)
     UINT status;
 
     // Connect to IoTHub client
-    if ((status = nx_azure_iot_hub_client_connect(&context->iothub_client, NX_TRUE, NX_WAIT_FOREVER)))
+    if ((status = nx_azure_iot_hub_client_connect(&context->iothub_client, NX_TRUE, HUB_CONNECT_TIMEOUT_TICKS)))
     {
         printf("Failed on nx_azure_iot_hub_client_connect (0x%08x)\r\n", status);
         return status;

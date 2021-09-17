@@ -8,7 +8,6 @@ set(SOURCES
     azure_config.h
     nx_client.c
     board_init.c
-    console.c
     main.c
 )
 
@@ -23,11 +22,7 @@ target_link_libraries(${PROJECT_NAME}
         app_common
         jsmn
         netxdriver
-)
-
-set_target_properties(${PROJECT_NAME}
-    PROPERTIES 
-        SUFFIX ".elf"
+        bme280
 )
 
 target_include_directories(${PROJECT_NAME} 
@@ -35,14 +30,10 @@ target_include_directories(${PROJECT_NAME}
         .
 )
 
-if(THREADX_TOOLCHAIN STREQUAL "iar")
-    target_link_options(${PROJECT_NAME}
-        PRIVATE 
-            --config ${CMAKE_CURRENT_LIST_DIR}/startup/iar/same54x20_flash.icf --map=${PROJECT_NAME}.map)
+if(CMAKE_C_COMPILER_ID STREQUAL "IAR")
+    set_target_linker(${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR}/startup/iar/same54x20_flash.icf)
 else()
-    target_link_options(${PROJECT_NAME}
-        PRIVATE 
-            -T${CMAKE_CURRENT_LIST_DIR}/startup/gnu/same54p20a_flash.ld -Wl,-Map=${PROJECT_NAME}.map)
+    set_target_linker(${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR}/startup/gnu/same54p20a_flash.ld)
 endif()
 
 post_build(${PROJECT_NAME})
